@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -96,6 +97,18 @@ namespace Dna.HtmlEngine.Core
 
         #endregion
 
+        #region Constructor
+
+        /// <summary>
+        /// Default constructor
+        /// </summary>
+        public BaseEngine()
+        {
+
+        }
+
+        #endregion
+
         #region Engine Methods
 
         /// <summary>
@@ -112,6 +125,13 @@ namespace Dna.HtmlEngine.Core
                 // Make sure we have extensions
                 if (this.EngineExtensions?.Count == 0)
                     throw new InvalidOperationException("No engine extensions specified");
+
+                // Load settings
+                LoadSettings();
+
+                // Resolve path
+                if (!Path.IsPathRooted(MonitorPath))
+                    MonitorPath = Path.GetFullPath(Path.Combine(System.AppContext.BaseDirectory, MonitorPath));
 
                 // Let listener know we started
                 Started();
@@ -145,6 +165,50 @@ namespace Dna.HtmlEngine.Core
                     // Start watcher
                     watcher.Start();
                 });
+            }
+        }
+
+        /// <summary>
+        /// Loads settings from a dna.config file
+        /// </summary>
+        private void LoadSettings()
+        {
+            // Default monitor path of this folder
+            MonitorPath = System.AppContext.BaseDirectory;
+
+            // Read config file for monitor path
+            try
+            {
+                var configFile = Path.Combine(System.AppContext.BaseDirectory, "dna.config");
+                if (File.Exists(configFile))
+                {
+                    var configData = File.ReadAllLines(configFile);
+
+                    // Try and find line starting with monitor: 
+                    var monitor = configData.FirstOrDefault(f => f.StartsWith("monitor: "));
+
+                    // If we didn't find it, ignore
+                    if (monitor == null)
+                        return;
+
+                    // Otherwise, load the monitor path
+                    monitor = monitor.Substring("monitor: ".Length);
+
+                    // Convert path to full path
+                    if (Path.IsPathRooted(monitor))
+                        MonitorPath = monitor;
+                    // Else resolve the relative path
+                    else
+                        MonitorPath = Path.GetFullPath(Path.Combine(System.AppContext.BaseDirectory, monitor));
+
+                    // Log it
+                    Log($"Monitor path set to: {MonitorPath}");
+                }
+            }
+            // Don't care about config file failures other than logging it
+            catch (Exception ex)
+            {
+                Log("Failed to read or process dna.config file", message: ex.Message, type: LogType.Warning);
             }
         }
 

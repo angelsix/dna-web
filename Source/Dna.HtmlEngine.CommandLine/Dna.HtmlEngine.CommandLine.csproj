@@ -9,4 +9,10 @@
     <ProjectReference Include="..\Dna.HtmlEngine.Core\Dna.HtmlEngine.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="dna.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

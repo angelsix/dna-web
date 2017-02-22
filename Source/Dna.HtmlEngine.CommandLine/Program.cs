@@ -1,7 +1,6 @@
 ﻿using Dna.HtmlEngine.Core;
 using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.IO;
 
 namespace Dna.HtmlEngine.CommandLine
 {
@@ -9,10 +8,8 @@ namespace Dna.HtmlEngine.CommandLine
     {
         static void Main(string[] args)
         {
-            using (var engine = new DnaHtmlEngine
-            {
-                MonitorPath = @"C:\Users\Luke\Desktop\test",
-            })
+
+            using (var engine = new DnaHtmlEngine())
             {
                 // Start the engine
                 engine.Start();

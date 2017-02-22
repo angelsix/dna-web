@@ -9,11 +9,9 @@ namespace Dna.HtmlEngine.CommandLine
     {
         static void Main(string[] args)
         {
-            using (var engine = new DebugEngine
+            using (var engine = new DnaHtmlEngine
             {
-                EngineExtensions = new List<string> { "*.dnaweb" },
                 MonitorPath = @"C:\Users\Luke\Desktop\test",
-                ProcessDelay = 2000
             })
             {
                 // Start the engine

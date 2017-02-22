@@ -16,10 +16,46 @@ namespace Dna.HtmlEngine.Core
         public DebugEngine()
         {
             // Listen out for all events and write them
-            this.Started += () => Console.WriteLine($"Engine started listening to '{this.MonitorPath}' with {this.ProcessDelay}ms delay...");
-            this.Stopped += () => Console.WriteLine("Engine stopped...");
-            this.StartedWatching += (extension) => Console.WriteLine($"Engine listening for file type {extension}");
-            this.StoppedWatching += (extension) => Console.WriteLine($"Engine stopped listening for file type {extension}");
+            this.LogMessage += (message) =>
+            {
+                // Set color
+                switch (message.Type)
+                {
+                    case LogType.Diagnostic:
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
+                        break;
+
+                    case LogType.Error:
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        break;
+
+                    case LogType.Information:
+                        Console.ForegroundColor = ConsoleColor.White;
+                        break;
+
+                    case LogType.Success:
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        break;
+
+                    case LogType.Warning:
+                        Console.ForegroundColor = ConsoleColor.DarkYellow;
+                        break;
+
+                    default:
+                        Console.ResetColor();
+                        break;
+                }
+
+                // Output title
+                Console.WriteLine(message.Title);
+
+                // Output detailed message if we have one
+                if (!string.IsNullOrEmpty(message.Message))
+                    Console.WriteLine(message.Message);
+
+                // Clear color
+                Console.ResetColor();
+            };
         }
 
         #endregion
@@ -31,9 +67,6 @@ namespace Dna.HtmlEngine.Core
         /// <returns></returns>
         protected override Task<EngineProcessResult> ProcessFile(string path)
         {
-            // Report processing to console
-            Console.WriteLine($"Processed file {path}");
-
             // Return success
             return Task.FromResult(new EngineProcessResult
             {

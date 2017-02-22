@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Dna.HtmlEngine.Core
@@ -33,7 +35,7 @@ namespace Dna.HtmlEngine.Core
         /// <summary>
         /// The time in milliseconds to wait for file edits to stop occurring before processing the file
         /// </summary>
-        public int ProcessDelay { get; set; }
+        public int ProcessDelay { get; set; } = 100;
 
         /// <summary>
         /// The filename extensions to monitor for
@@ -156,6 +158,9 @@ namespace Dna.HtmlEngine.Core
             {
                 try
                 {
+                    // Log the start
+                    Log($"Processing file {path}...", type: LogType.Information);
+
                     // Process the file
                     var result = await ProcessFile(path);
 
@@ -179,7 +184,7 @@ namespace Dna.HtmlEngine.Core
                         ProcessFailed(result);
 
                         // Log the message
-                        Log($"Failed to processed file {path}", type: LogType.Error);
+                        Log($"Failed to processed file {path}", message: result.Error, type: LogType.Error);
                     }
                 }
                 // Catch any unexpected failures
@@ -197,6 +202,53 @@ namespace Dna.HtmlEngine.Core
                     Log($"Unexpected fail to processed file {path}", message: ex.Message, type: LogType.Error);
                 }
             });
+        }
+
+        /// <summary>
+        /// Replaces a given Regex match with the contents
+        /// </summary>
+        /// <param name="originalContent">The original contents to edit</param>
+        /// <param name="match">The regex match to replace</param>
+        /// <param name="newContent">The content to replace the match with</param>
+        protected void ReplaceTag(ref string originalContent, Match match, string newContent)
+        {
+            // If the match is at the start, replace it
+            if (match.Index == 0)
+                originalContent = newContent + originalContent.Substring(match.Length);
+            // Otherwise do an inner replace
+            else
+                originalContent = string.Concat(originalContent.Substring(0, match.Index), newContent, originalContent.Substring(match.Index + match.Length));
+        }
+
+        #endregion
+
+        #region Tag Replace Methods
+
+        /// <summary>
+        /// Processes an Output name command to add an output path
+        /// </summary>
+        /// <param name="path">The file that is being edit</param>
+        /// <param name="fileContents">The full file contents to edit</param>
+        /// <param name="outputPaths">The list of output names, can be changed by tags</param>
+        /// <param name="outputPath">The include path, typically a relative path</param>
+        /// <param name="match">The original match that found this information</param>
+        /// <param name="error">Set the error if there is a failure</param>
+        /// <returns></returns>
+        protected bool ProcessCommandOutput(string path, ref string fileContents, List<string> outputPaths, string outputPath, Match match, out string error)
+        {
+            // No error to start with
+            error = string.Empty;
+
+            // Get the full path from the provided relative path based on the input files location
+            var fullPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(path), outputPath));
+
+            // Add this to the list
+            outputPaths.Add(fullPath);
+
+            // Remove the tag
+            ReplaceTag(ref fileContents, match, string.Empty);
+
+            return true;
         }
 
         #endregion

@@ -76,6 +76,11 @@ namespace Dna.HtmlEngine.Core
         /// </summary>
         public event Action<string> StoppedWatching = (extension) => { };
 
+        /// <summary>
+        /// Called when a log message is raised
+        /// </summary>
+        public event Action<LogMessage> LogMessage = (message) => { };
+
         #endregion
 
         #region Abstract Methods
@@ -109,6 +114,9 @@ namespace Dna.HtmlEngine.Core
                 // Let listener know we started
                 Started();
 
+                // Log the message
+                Log($"Engine started listening to '{this.MonitorPath}' with {this.ProcessDelay}ms delay...");
+                    
                 // Create a new list of watchers
                 mWatchers = new List<FolderWatcher>();
 
@@ -128,6 +136,9 @@ namespace Dna.HtmlEngine.Core
 
                     // Inform listener
                     StartedWatching(watcher.Filter);
+
+                    // Log the message
+                    Log($"Engine listening for file type {watcher.Filter}");
 
                     // Start watcher
                     watcher.Start();
@@ -154,10 +165,22 @@ namespace Dna.HtmlEngine.Core
 
                     // If we succeeded, let the listeners know
                     if (result.Success)
+                    {
+                        // Inform listeners
                         ProcessSuccessful(result);
+
+                        // Log the message
+                        Log($"Successfully processed file {path}", type: LogType.Success);
+                    }
                     // If we failed, let the listeners know
                     else
+                    {
+                        // Inform listeners
                         ProcessFailed(result);
+
+                        // Log the message
+                        Log($"Failed to processed file {path}", type: LogType.Error);
+                    }
                 }
                 // Catch any unexpected failures
                 catch (Exception ex)
@@ -169,7 +192,31 @@ namespace Dna.HtmlEngine.Core
                         Error = ex.Message,
                         Success = false,
                     });
+
+                    // Log the message
+                    Log($"Unexpected fail to processed file {path}", message: ex.Message, type: LogType.Error);
                 }
+            });
+        }
+
+        #endregion
+
+        #region Logger
+
+        /// <summary>
+        /// Logs a message and raises the <see cref="LogMessage"/> event
+        /// </summary>
+        /// <param name="title">The title of the log</param>
+        /// <param name="message">The main message of the log</param>
+        /// <param name="type">The type of the log message</param>
+        public void Log(string title, string message = "", LogType type = LogType.Diagnostic)
+        {
+            LogMessage(new LogMessage
+            {
+                Title = title,
+                Message = message,
+                Time = DateTime.UtcNow,
+                Type = type
             });
         }
 
@@ -193,11 +240,19 @@ namespace Dna.HtmlEngine.Core
 
                 // Inform listener
                 StoppedWatching(extension);
+
+                // Log the message
+                Log($"Engine stopped listening for file type {watcher.Filter}");
             });
 
             if (mWatchers != null)
+            {
                 // Let listener know we stopped
                 Stopped();
+
+                // Log the message
+                Log($"Engine stopped");
+            }
 
             mWatchers = null;
         }

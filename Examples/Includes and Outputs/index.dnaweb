@@ -1,6 +1,6 @@
-<!--@ output index.html --> 
-<!--@ output extra.html --> 
+<!--@ output index.html @--> 
+<!--@ output extra.html @--> 
 
-<!--@ include header.dnaweb -->
+<!--@ include header.dnaweb @-->
     <h1>Header</h1>
-<!--@ include footer.dnaweb -->
+<!--@ include footer.dnaweb @-->

@@ -59,20 +59,5 @@ namespace Dna.HtmlEngine.Core
         }
 
         #endregion
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        protected override Task<EngineProcessResult> ProcessFile(string path)
-        {
-            // Return success
-            return Task.FromResult(new EngineProcessResult
-            {
-                Success = true,
-                Path = path,
-            });
-        }
     }
 }

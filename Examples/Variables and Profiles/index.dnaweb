@@ -1,0 +1,23 @@
+<!--@ output index.htm @-->
+<!--@ output index-server.htm:server @-->
+<!--@ output index-server2.htm:server2 @-->
+<!--$
+<Data>
+    <Variable Name="Title">My title</Variable>
+    <Variable Name="Title" Profile="Server2">My other server title</Variable>
+
+    <Profile Name="Server">
+        <Variable Name="Title">My server title</Variable>
+    </Profile>
+
+</Data>
+$-->
+
+<html>
+<head>
+<title>My title</title>
+</head>
+<body>
+    <h1>$$Title$$</h1>
+</body>
+</html>

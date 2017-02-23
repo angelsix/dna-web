@@ -522,11 +522,13 @@ namespace Dna.HtmlEngine.Core
             if (removeNewline)
             {
                 // Remove carriage return
-                if (originalContent[match.Index + match.Length] == '\r')
+                if ((originalContent.Length > match.Index + match.Length) && 
+                    originalContent[match.Index + match.Length] == '\r')
                     originalContent = string.Concat(originalContent.Substring(0, match.Index + match.Length), originalContent.Substring(match.Index + match.Length + 1));
 
                 // Return newline
-                if (originalContent[match.Index + match.Length] == '\n')
+                if ((originalContent.Length > match.Index + match.Length) && 
+                    originalContent[match.Index + match.Length] == '\n')
                     originalContent = string.Concat(originalContent.Substring(0, match.Index + match.Length), originalContent.Substring(match.Index + match.Length + 1));
             }
 

@@ -515,8 +515,21 @@ namespace Dna.HtmlEngine.Core
         /// <param name="originalContent">The original contents to edit</param>
         /// <param name="match">The regex match to replace</param>
         /// <param name="newContent">The content to replace the match with</param>
-        protected void ReplaceTag(ref string originalContent, Match match, string newContent)
+        /// <param name="removeNewline">Remove the newline following the match if one is present</param>
+        protected void ReplaceTag(ref string originalContent, Match match, string newContent, bool removeNewline = true)
         {
+            // If we want to remove a suffixed newline...
+            if (removeNewline)
+            {
+                // Remove carriage return
+                if (originalContent[match.Index + match.Length] == '\r')
+                    originalContent = string.Concat(originalContent.Substring(0, match.Index + match.Length), originalContent.Substring(match.Index + match.Length + 1));
+
+                // Return newline
+                if (originalContent[match.Index + match.Length] == '\n')
+                    originalContent = string.Concat(originalContent.Substring(0, match.Index + match.Length), originalContent.Substring(match.Index + match.Length + 1));
+            }
+
             // If the match is at the start, replace it
             if (match.Index == 0)
                 originalContent = newContent + originalContent.Substring(match.Length);

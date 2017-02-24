@@ -1,0 +1,7 @@
+<!--@ output server.html:server @-->
+<!--@ output local.html @-->
+
+<h1>Header</h1>
+<!--@ inline <h1>This is in all outputs</h1> @-->
+<!--@ inline:! <h1>This is in default outputs only</h1> @-->
+<!--@ inline:server <h1>This is in server output only</h1> @-->

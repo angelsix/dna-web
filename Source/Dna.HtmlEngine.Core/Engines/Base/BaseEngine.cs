@@ -153,7 +153,7 @@ namespace Dna.HtmlEngine.Core
                 return new EngineProcessResult { Success = false, Path = path, Error = processingData.Error };
 
             // Process base tags
-            ProcessBaseTags(processingData);
+            ProcessMainTags(processingData);
 
             // If it failed
             if (!processingData.Successful)
@@ -566,11 +566,13 @@ namespace Dna.HtmlEngine.Core
         /// Processes the tags in the list and edits the files contents as required
         /// </summary>
         /// <param name="data">The file processing data</param>
-        public void ProcessBaseTags(FileProcessingData data)
+        public void ProcessMainTags(FileProcessingData data)
         {
             // For each output
             data.OutputPaths.ForEach(output =>
             {
+                #region Find Includes 
+
                 // Find all special tags that have 2 groups
                 var match = Regex.Match(output.FileContents, mStandard2GroupRegex, RegexOptions.Singleline);
 
@@ -605,6 +607,27 @@ namespace Dna.HtmlEngine.Core
                             ReplaceTag(output, match, string.Empty);
                             break;
 
+                        case "inline":
+
+                            // Make sure we have enough groups
+                            if (match.Groups.Count < 3)
+                            {
+                                data.Error = $"Malformed match {match.Value}";
+                                return;
+                            }
+
+                            // Get inline data
+                            var inlineData = match.Groups[2].Value;
+
+                            // Process the include command
+                            ProcessInlineTag(data, output, inlineData, match);
+
+                            if (!data.Successful)
+                                // Return false if it fails
+                                return;
+
+                            break;
+
                         // INCLUDE (Replace file)
                         case "include":
 
@@ -626,7 +649,7 @@ namespace Dna.HtmlEngine.Core
                             }
 
                             // Process the include command
-                            ProcessIncludeTags(data, output, includePath, match);
+                            ProcessIncludeTag(data, output, includePath, match);
 
                             if (!data.Successful)
                                 // Return false if it fails
@@ -647,7 +670,55 @@ namespace Dna.HtmlEngine.Core
                     // Find the next command
                     match = Regex.Match(output.FileContents, mStandard2GroupRegex, RegexOptions.Singleline);
                 }
+
+                #endregion
             });
+        }
+
+        /// <summary>
+        /// Processes an Inline command to replace a tag with the contents of the data between the tags
+        /// </summary>
+        /// <param name="data">The file processing data</param>
+        /// <param name="output">The file output data</param>
+        /// <param name="inlineData">The inline data</param>
+        /// <param name="match">The original match that found this information</param>
+        protected void ProcessInlineTag(FileProcessingData data, FileOutputData output, string inlineData, Match match)
+        {
+            // No error to start with
+            data.Error = string.Empty;
+
+            // Profile name
+            string profileName = null;
+
+            // If the name starts with : then left half is the profile name
+            if (inlineData[0] == ':')
+            {
+                // Set profile path
+                profileName = inlineData.Substring(1, inlineData.IndexOf(' ') - 1);
+
+                // Set inline data (+2 to exclude the space after the profile name and the starting :
+                inlineData = inlineData.Substring(profileName.Length + 2);
+            }
+
+            // NOTE: A blank profile should be included for everything
+            //       A ! means only include if no specific profile name is given
+            //       Anything else is the a profile name so should only include if matched
+
+            // If the profile is blank, always include it
+            if (string.IsNullOrEmpty(profileName) ||
+                // Or if we specify ! only include it if the specified profile is  blank
+                (profileName == "!" && string.IsNullOrEmpty(output.ProfileName)) ||
+                // Or if the profile name matches include it
+                string.Equals(output.ProfileName, profileName, StringComparison.CurrentCultureIgnoreCase))
+            {
+                // Replace the tag with the contents
+                ReplaceTag(output, match, inlineData, removeNewline: false);
+            }
+            // Remove include tag and finish
+            else
+            {
+                ReplaceTag(output, match, string.Empty);
+            }
         }
 
         /// <summary>
@@ -657,7 +728,7 @@ namespace Dna.HtmlEngine.Core
         /// <param name="output">The file output data</param>
         /// <param name="includePath">The include path, typically a relative path</param>
         /// <param name="match">The original match that found this information</param>
-        protected void ProcessIncludeTags(FileProcessingData data, FileOutputData output, string includePath, Match match)
+        protected void ProcessIncludeTag(FileProcessingData data, FileOutputData output, string includePath, Match match)
         {
             // No error to start with
             data.Error = string.Empty;

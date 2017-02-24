@@ -694,7 +694,8 @@ namespace Dna.HtmlEngine.Core
             if (inlineData[0] == ':')
             {
                 // Set profile path
-                profileName = inlineData.Substring(1, inlineData.IndexOf(' ') - 1);
+                // Find first index of a space or newline
+                profileName = inlineData.Substring(1, inlineData.IndexOfAny(new [] { ' ', '\r', '\n' }) - 1);
 
                 // Set inline data (+2 to exclude the space after the profile name and the starting :
                 inlineData = inlineData.Substring(profileName.Length + 2);

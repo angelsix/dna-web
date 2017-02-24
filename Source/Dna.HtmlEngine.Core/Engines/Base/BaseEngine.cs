@@ -746,26 +746,31 @@ namespace Dna.HtmlEngine.Core
                 includePath = includePath.Split(':')[0];
             }
 
-            // If this include is not for this output profile, ignore it
-            if (!string.Equals(output.ProfileName, profileName, StringComparison.CurrentCultureIgnoreCase))
+            // If the profile is blank, always include it
+            if (string.IsNullOrEmpty(profileName) ||
+                // Or if we specify ! only include it if the specified profile is  blank
+                (profileName == "!" && string.IsNullOrEmpty(output.ProfileName)) ||
+                // Or if the profile name matches include it
+                string.Equals(output.ProfileName, profileName, StringComparison.CurrentCultureIgnoreCase))
             {
-                // Remove include tag and finish
+                // Try and find the include file
+                var includedContents = FindIncludeFile(data.FullPath, includePath, out string resolvedPath);
+
+                // If we didn't find it, error out
+                if (includedContents == null)
+                {
+                    data.Error = $"Include file not found {includePath}";
+                    return;
+                }
+
+                // Otherwise we got it, so replace the tag with the contents
+                ReplaceTag(output, match, includedContents, removeNewline: false);
+            }
+            // Remove include tag and finish
+            else
+            {
                 ReplaceTag(output, match, string.Empty);
-                return;
             }
-
-            // Try and find the include file
-            var includedContents = FindIncludeFile(data.FullPath, includePath, out string resolvedPath);
-
-            // If we didn't find it, error out
-            if (includedContents == null)
-            {
-                data.Error = $"Include file not found {includePath}";
-                return;
-            }
-
-            // Otherwise we got it, so replace the tag with the contents
-            ReplaceTag(output, match, includedContents, removeNewline: false);
         }
 
         /// <summary>

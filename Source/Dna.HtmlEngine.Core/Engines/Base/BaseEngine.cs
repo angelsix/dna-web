@@ -134,7 +134,7 @@ namespace Dna.HtmlEngine.Core
                 return new EngineProcessResult { Success = false, Path = processingData.FullPath, Error = "File no longer exists" };
 
             // Read all the file into memory (it's ok we will never have large files they are text web files)
-            processingData.FileContents = FileManager.ReadAllText(processingData.FullPath);
+            processingData.UnprocessedFileContents = FileManager.ReadAllText(processingData.FullPath);
 
             // Pre-processing
             await PreProcessFile(processingData);
@@ -144,8 +144,16 @@ namespace Dna.HtmlEngine.Core
                 // Return the failure
                 return new EngineProcessResult { Success = false, Path = path, Error = processingData.Error };
 
+            // Find all outputs
+            ProcessOutputTags(processingData);
+
+            // If it failed
+            if (!processingData.Successful)
+                // Return the failure
+                return new EngineProcessResult { Success = false, Path = path, Error = processingData.Error };
+
             // Process base tags
-            ProcessBaseTags(processingData);
+            ProcessMainTags(processingData);
 
             // If it failed
             if (!processingData.Successful)
@@ -176,7 +184,8 @@ namespace Dna.HtmlEngine.Core
                 if (processingData.OutputPaths.Count == 0)
                     // Get default output name
                     processingData.OutputPaths.Add(new FileOutputData {
-                        FullPath = GetDefaultOutputPath(processingData.FullPath)
+                        FullPath = GetDefaultOutputPath(processingData.FullPath),
+                        FileContents = processingData.UnprocessedFileContents
                     });
 
                 // Generate each output
@@ -418,13 +427,13 @@ namespace Dna.HtmlEngine.Core
         #region Command Tags
 
         /// <summary>
-        /// Processes the tags in the list and edits the files contents as required
+        /// Processes the tags and finds all output tags
         /// </summary>
         /// <param name="data">The file processing data</param>
-        public void ProcessBaseTags(FileProcessingData data)
+        public void ProcessOutputTags(FileProcessingData data)
         {
             // Find all special tags that have 2 groups
-            var match = Regex.Match(data.FileContents, mStandard2GroupRegex, RegexOptions.Singleline);
+            var match = Regex.Match(data.UnprocessedFileContents, mStandard2GroupRegex, RegexOptions.Singleline);
 
             // No error to start with
             data.Error = string.Empty;
@@ -437,8 +446,8 @@ namespace Dna.HtmlEngine.Core
             //
             var firstMatch = true;
 
-            // Keep track of all includes to monitor for circular references
-            var includes = new List<string>();
+            // Store original contents
+            var tempContents = data.UnprocessedFileContents;
 
             // Loop through all matches
             while (match.Success)
@@ -486,7 +495,7 @@ namespace Dna.HtmlEngine.Core
                         var outputPath = match.Groups[2].Value;
 
                         // Process the output command
-                        ProcessCommandOutput(data, outputPath, match);
+                        ProcessOutputTag(data, outputPath, match);
 
                         if (!data.Successful)
                             // Return false if it fails
@@ -494,51 +503,24 @@ namespace Dna.HtmlEngine.Core
 
                         break;
 
-                    // INCLUDE (Replace file)
-                    case "include":
-
-                        // Make sure we have enough groups
-                        if (match.Groups.Count < 3)
-                        {
-                            data.Error = $"Malformed match {match.Value}";
-                            return;
-                        }
-
-                        // Get include path
-                        var includePath = match.Groups[2].Value;
-
-                        // Make sure we have not already included it in this run
-                        if (includes.Contains(includePath.ToLower().Trim()))
-                        {
-                            data.Error = $"Circular reference detected {includePath}";
-                            return;
-                        }
-
-                        // Process the include command
-                        ProcessCommandInclude(data, includePath, match);
-
-                        if (!data.Successful)
-                            // Return false if it fails
-                            return;
-
-                        // Add this to the list of already processed includes
-                        includes.Add(includePath.ToLower().Trim());
-
-                        break;
-
-                    // UNKNOWN
+                    // UNKNOWN (just ignore)
                     default:
-                        // Report error of unknown match
-                        data.Error = $"Unknown match {match.Value}";
-                        return;
+                        ReplaceTag(data, match, string.Empty);
+                        break;
                 }
 
                 // Find the next command
-                match = Regex.Match(data.FileContents, mStandard2GroupRegex, RegexOptions.Singleline);
+                match = Regex.Match(data.UnprocessedFileContents, mStandard2GroupRegex, RegexOptions.Singleline);
 
                 // No longer the first match
                 firstMatch = false;
             }
+
+            // Restore contents
+            data.UnprocessedFileContents = tempContents;
+
+            // Now set file contents
+            data.OutputPaths.ForEach(output => output.FileContents = data.UnprocessedFileContents);
         }
 
         /// <summary>
@@ -548,7 +530,7 @@ namespace Dna.HtmlEngine.Core
         /// <param name="outputPath">The include path, typically a relative path</param>
         /// <param name="match">The original match that found this information</param>
         /// <returns></returns>
-        protected void ProcessCommandOutput(FileProcessingData data, string outputPath, Match match)
+        protected void ProcessOutputTag(FileProcessingData data, string outputPath, Match match)
         {
             // No error to start with
             data.Error = string.Empty;
@@ -570,9 +552,10 @@ namespace Dna.HtmlEngine.Core
             var fullPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(data.FullPath), outputPath));
 
             // Add this to the list
-            data.OutputPaths.Add(new FileOutputData {
+            data.OutputPaths.Add(new FileOutputData
+            {
                 FullPath = fullPath,
-                ProfileName = profileName
+                ProfileName = profileName,
             });
 
             // Remove the tag
@@ -580,15 +563,196 @@ namespace Dna.HtmlEngine.Core
         }
 
         /// <summary>
-        /// Processes an Include command to replace a tag with the contents of another file
+        /// Processes the tags in the list and edits the files contents as required
         /// </summary>
         /// <param name="data">The file processing data</param>
-        /// <param name="includePath">The include path, typically a relative path</param>
+        public void ProcessMainTags(FileProcessingData data)
+        {
+            // For each output
+            data.OutputPaths.ForEach(output =>
+            {
+                #region Find Includes 
+
+                // Find all special tags that have 2 groups
+                var match = Regex.Match(output.FileContents, mStandard2GroupRegex, RegexOptions.Singleline);
+
+                // No error to start with
+                data.Error = string.Empty;
+
+                // Keep track of all includes to monitor for circular references
+                var includes = new List<string>();
+
+                // Loop through all matches
+                while (match.Success)
+                {
+                    // NOTE: The first group is the full match
+                    //       The second group and onwards are the matches
+
+                    // Make sure we have enough groups
+                    if (match.Groups.Count < 2)
+                    {
+                        data.Error = $"Malformed match {match.Value}";
+                        return;
+                    }
+
+                    // Take the first match as the header for the type of tag
+                    var tagType = match.Groups[1].Value.ToLower().Trim();
+
+                    // Now process each tag type
+                    switch (tagType)
+                    {
+                        // Remove partial and outputs (already processed)
+                        case "partial":
+                        case "output":
+                            ReplaceTag(output, match, string.Empty);
+                            break;
+
+                        case "inline":
+
+                            // Make sure we have enough groups
+                            if (match.Groups.Count < 3)
+                            {
+                                data.Error = $"Malformed match {match.Value}";
+                                return;
+                            }
+
+                            // Get inline data
+                            var inlineData = match.Groups[2].Value;
+
+                            // Process the include command
+                            ProcessInlineTag(data, output, inlineData, match);
+
+                            if (!data.Successful)
+                                // Return false if it fails
+                                return;
+
+                            break;
+
+                        // INCLUDE (Replace file)
+                        case "include":
+
+                            // Make sure we have enough groups
+                            if (match.Groups.Count < 3)
+                            {
+                                data.Error = $"Malformed match {match.Value}";
+                                return;
+                            }
+
+                            // Get include path
+                            var includePath = match.Groups[2].Value;
+
+                            // Make sure we have not already included it in this run
+                            if (includes.Contains(includePath.ToLower().Trim()))
+                            {
+                                data.Error = $"Circular reference detected {includePath}";
+                                return;
+                            }
+
+                            // Process the include command
+                            ProcessIncludeTag(data, output, includePath, match);
+
+                            if (!data.Successful)
+                                // Return false if it fails
+                                return;
+
+                            // Add this to the list of already processed includes
+                            includes.Add(includePath.ToLower().Trim());
+
+                            break;
+
+                        // UNKNOWN
+                        default:
+                            // Report error of unknown match
+                            data.Error = $"Unknown match {match.Value}";
+                            return;
+                    }
+
+                    // Find the next command
+                    match = Regex.Match(output.FileContents, mStandard2GroupRegex, RegexOptions.Singleline);
+                }
+
+                #endregion
+            });
+        }
+
+        /// <summary>
+        /// Processes an Inline command to replace a tag with the contents of the data between the tags
+        /// </summary>
+        /// <param name="data">The file processing data</param>
+        /// <param name="output">The file output data</param>
+        /// <param name="inlineData">The inline data</param>
         /// <param name="match">The original match that found this information</param>
-        protected void ProcessCommandInclude(FileProcessingData data, string includePath, Match match)
+        protected void ProcessInlineTag(FileProcessingData data, FileOutputData output, string inlineData, Match match)
         {
             // No error to start with
             data.Error = string.Empty;
+
+            // Profile name
+            string profileName = null;
+
+            // If the name starts with : then left half is the profile name
+            if (inlineData[0] == ':')
+            {
+                // Set profile path
+                profileName = inlineData.Substring(1, inlineData.IndexOf(' ') - 1);
+
+                // Set inline data (+2 to exclude the space after the profile name and the starting :
+                inlineData = inlineData.Substring(profileName.Length + 2);
+            }
+
+            // NOTE: A blank profile should be included for everything
+            //       A ! means only include if no specific profile name is given
+            //       Anything else is the a profile name so should only include if matched
+
+            // If the profile is blank, always include it
+            if (string.IsNullOrEmpty(profileName) ||
+                // Or if we specify ! only include it if the specified profile is  blank
+                (profileName == "!" && string.IsNullOrEmpty(output.ProfileName)) ||
+                // Or if the profile name matches include it
+                string.Equals(output.ProfileName, profileName, StringComparison.CurrentCultureIgnoreCase))
+            {
+                // Replace the tag with the contents
+                ReplaceTag(output, match, inlineData, removeNewline: false);
+            }
+            // Remove include tag and finish
+            else
+            {
+                ReplaceTag(output, match, string.Empty);
+            }
+        }
+
+        /// <summary>
+        /// Processes an Include command to replace a tag with the contents of another file
+        /// </summary>
+        /// <param name="data">The file processing data</param>
+        /// <param name="output">The file output data</param>
+        /// <param name="includePath">The include path, typically a relative path</param>
+        /// <param name="match">The original match that found this information</param>
+        protected void ProcessIncludeTag(FileProcessingData data, FileOutputData output, string includePath, Match match)
+        {
+            // No error to start with
+            data.Error = string.Empty;
+
+            // Profile name
+            string profileName = null;
+
+            // If the name have a single : then the right half is the profile name
+            if (includePath.Count(c => c == ':') == 1)
+            {
+                // Set profile path
+                profileName = includePath.Split(':')[1];
+
+                // Set output path
+                includePath = includePath.Split(':')[0];
+            }
+
+            // If this include is not for this output profile, ignore it
+            if (!string.Equals(output.ProfileName, profileName, StringComparison.CurrentCultureIgnoreCase))
+            {
+                // Remove include tag and finish
+                ReplaceTag(output, match, string.Empty);
+                return;
+            }
 
             // Try and find the include file
             var includedContents = FindIncludeFile(data.FullPath, includePath, out string resolvedPath);
@@ -601,7 +765,69 @@ namespace Dna.HtmlEngine.Core
             }
 
             // Otherwise we got it, so replace the tag with the contents
-            ReplaceTag(data, match, includedContents);
+            ReplaceTag(output, match, includedContents, removeNewline: false);
+        }
+
+        /// <summary>
+        /// Processes the variable and data tags in the list and edits the files contents as required
+        /// </summary>
+        /// <param name="data">The file processing data</param>
+        /// <returns></returns>
+        protected void ProcessDataTags(FileProcessingData data)
+        {
+            // For each output
+            data.OutputPaths.ForEach(output =>
+            {
+                // Find all sets of XML data that contain variables and other data
+                var match = Regex.Match(output.FileContents, mStandardVariableRegex, RegexOptions.Singleline);
+
+                // No error to start with
+                data.Error = string.Empty;
+
+                // Loop through all matches
+                while (match.Success)
+                {
+                    // NOTE: The first group is the full match
+                    //       The second group is the XML
+
+                    // Make sure we have enough groups
+                    if (match.Groups.Count < 2)
+                    {
+                        data.Error = $"Malformed match {match.Value}";
+                        return;
+                    }
+
+                    // Take the first match as the header for the type of tag
+                    var xmlString = match.Groups[1].Value.Trim();
+
+                    // Create XDocument
+                    XDocument xmlData = null;
+
+                    try
+                    {
+                        // Get XML data from it
+                        xmlData = XDocument.Parse(xmlString);
+                    }
+                    catch (Exception ex)
+                    {
+                        data.Error = $"Malformed data region {xmlString}. {ex.Message}";
+                        return;
+                    }
+
+                    // Extract variables and any other data from it
+                    ExtractData(data, output, xmlData);
+
+                    // If it failed, return now
+                    if (!data.Successful)
+                        return;
+
+                    // Remove tag
+                    ReplaceTag(output, match, string.Empty);
+
+                    // Find the next data region
+                    match = Regex.Match(output.FileContents, mStandardVariableRegex, RegexOptions.Singleline);
+                }
+            });
         }
 
         #region Private Helpers
@@ -641,15 +867,29 @@ namespace Dna.HtmlEngine.Core
         /// <summary>
         /// Replaces a given Regex match with the contents
         /// </summary>
+        /// <param name="data">The file output data</param>
+        /// <param name="match">The regex match to replace</param>
+        /// <param name="newContent">The content to replace the match with</param>
+        /// <param name="removeNewline">Remove the newline following the match if one is present</param>
+        protected void ReplaceTag(FileOutputData data, Match match, string newContent, bool removeNewline = true)
+        {
+            var contents = data.FileContents;
+            ReplaceTag(ref contents, match, newContent, removeNewline);
+            data.FileContents = contents;
+        }
+
+        /// <summary>
+        /// Replaces a given Regex match with the contents
+        /// </summary>
         /// <param name="data">The file processing data</param>
         /// <param name="match">The regex match to replace</param>
         /// <param name="newContent">The content to replace the match with</param>
         /// <param name="removeNewline">Remove the newline following the match if one is present</param>
         protected void ReplaceTag(FileProcessingData data, Match match, string newContent, bool removeNewline = true)
         {
-            var contents = data.FileContents;
+            var contents = data.UnprocessedFileContents;
             ReplaceTag(ref contents, match, newContent, removeNewline);
-            data.FileContents = contents;
+            data.UnprocessedFileContents = contents;
         }
 
         /// <summary>
@@ -682,20 +922,26 @@ namespace Dna.HtmlEngine.Core
             else
                 fileContents = string.Concat(fileContents.Substring(0, match.Index), newContent, fileContents.Substring(match.Index + match.Length));
         }
-        
+
+        #endregion
+
+        #endregion
+
+        #region Generate Output
+
         /// <summary>
         /// Replaces all variables with the variable values and generates the final output data
         /// for a given output path
         /// </summary>
         /// <param name="data">The file processing data</param>
-        /// <param name="outputPath">The output data to generate the contents for</param>
-        protected string GenerateOutput(FileProcessingData data, FileOutputData outputPath)
+        /// <param name="output">The output data to generate the contents for</param>
+        protected string GenerateOutput(FileProcessingData data, FileOutputData output)
         {
             // Create a match variable
             Match match = null;
 
             // Get a copy of the contents
-            var contents = data.FileContents;
+            var contents = output.FileContents;
 
             // Go though all matches
             while (match == null || match.Success)
@@ -711,14 +957,14 @@ namespace Dna.HtmlEngine.Core
                 var variable = match.Groups[1].Value;
 
                 // Get the variable 
-                var variableValue = data.Variables.FirstOrDefault(v =>
+                var variableValue = output.Variables.FirstOrDefault(v =>
                     string.Equals(v.Name, variable, StringComparison.CurrentCultureIgnoreCase) &&
-                    string.Equals(v.ProfileName, outputPath.ProfileName, StringComparison.CurrentCultureIgnoreCase));
+                    string.Equals(v.ProfileName, output.ProfileName, StringComparison.CurrentCultureIgnoreCase));
 
                 // Error if we don't get one
                 if (variableValue == null)
                 {
-                    data.Error = $"Variable not found {variable} for profile '{outputPath.ProfileName}'";
+                    data.Error = $"Variable not found {variable} for profile '{output.ProfileName}'";
                     return null;
                 }
 
@@ -732,85 +978,24 @@ namespace Dna.HtmlEngine.Core
 
         #endregion
 
-        #endregion
-
-        #region Data Tags
-
-        /// <summary>
-        /// Processes the variable and data tags in the list and edits the files contents as required
-        /// </summary>
-        /// <param name="data">The file processing data</param>
-        /// <returns></returns>
-        protected void ProcessDataTags(FileProcessingData data)
-        {
-            // Find all sets of XML data that contain variables and other data
-            var match = Regex.Match(data.FileContents, mStandardVariableRegex, RegexOptions.Singleline);
-
-            // No error to start with
-            data.Error = string.Empty;
-
-            // Loop through all matches
-            while (match.Success)
-            {
-                // NOTE: The first group is the full match
-                //       The second group is the XML
-
-                // Make sure we have enough groups
-                if (match.Groups.Count < 2)
-                {
-                    data.Error = $"Malformed match {match.Value}";
-                    return;
-                }
-
-                // Take the first match as the header for the type of tag
-                var xmlString = match.Groups[1].Value.Trim();
-
-                // Create XDocument
-                XDocument xmlData = null;
-
-                try
-                {
-                    // Get XML data from it
-                    xmlData = XDocument.Parse(xmlString);
-                }
-                catch (Exception ex)
-                {
-                    data.Error = $"Malformed data region {xmlString}. {ex.Message}";
-                    return;
-                }
-
-                // Extract variables and any other data from it
-                ExtractData(data, xmlData);
-
-                // If it failed, return now
-                if (!data.Successful)
-                    return;
-
-                // Remove tag
-                ReplaceTag(data, match, string.Empty);
-
-                // Find the next data region
-                match = Regex.Match(data.FullPath, mStandardVariableRegex, RegexOptions.Singleline);
-            }
-
-            return;
-        }
+        #region Extract Data Regions
 
         /// <summary>
         /// Extracts the data from an <see cref="XDocument"/> and stores the variables and data in the engine
         /// </summary>
         /// <param name="data">The file processing data</param>
+        /// <param name="output">The file output data</param>
         /// <param name="xmlData">The data to extract</param>
-        protected void ExtractData(FileProcessingData data, XDocument xmlData)
+        protected void ExtractData(FileProcessingData data, FileOutputData output, XDocument xmlData)
         {
             // Find any variables
-            ExtractVariables(data, xmlData.Root);
+            ExtractVariables(data, output, xmlData.Root);
 
             // Profiles
             foreach (var profileElement in xmlData.Root.Elements("Profile"))
             {
                 // Find any variables
-                ExtractVariables(data, profileElement, profileElement.Attribute("Name")?.Value);
+                ExtractVariables(data, output, profileElement, profileElement.Attribute("Name")?.Value);
             }
         }
 
@@ -818,9 +1003,10 @@ namespace Dna.HtmlEngine.Core
         /// Extract variables from the XML element
         /// </summary>
         /// <param name="data">The file processing data</param>
+        /// <param name="output">The file output data</param>
         /// <param name="element">The Xml element</param>
         /// <param name="profileName">The profile name, if explicitly specified</param>
-        protected void ExtractVariables(FileProcessingData data, XElement element, string profileName = null)
+        protected void ExtractVariables(FileProcessingData data, FileOutputData output, XElement element, string profileName = null)
         {
             // Loop all elements with the name of variable
             foreach (var variableElement in element.Elements("Variable"))
@@ -843,7 +1029,7 @@ namespace Dna.HtmlEngine.Core
                     }
 
                     // Add or update variable
-                    var existing = data.Variables.FirstOrDefault(f =>
+                    var existing = output.Variables.FirstOrDefault(f =>
                         string.Equals(f.Name, variable.Name) &&
                         string.Equals(f.ProfileName, variable.ProfileName));
 
@@ -852,7 +1038,7 @@ namespace Dna.HtmlEngine.Core
                         existing.Value = variable.Value;
                     // Otherwise, add it
                     else
-                        data.Variables.Add(variable);
+                        output.Variables.Add(variable);
                 }
                 catch (Exception ex)
                 {
@@ -941,6 +1127,11 @@ namespace Dna.HtmlEngine.Core
 
                 // Get include path
                 var includePath = match.Groups[2].Value;
+
+                // Strip any profile name (we don't care about that for this)
+                // If the name have a single : then the right half is the profile name
+                if (includePath.Count(c => c == ':') == 1)
+                    includePath = includePath.Split(':')[0];
 
                 // Try and find the include file
                 FindIncludeFile(filePath, includePath, out string resolvedPath, returnContents: false);

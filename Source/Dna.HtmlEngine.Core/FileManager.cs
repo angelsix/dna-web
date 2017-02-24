@@ -14,6 +14,10 @@ namespace Dna.HtmlEngine.Core
         /// <param name="outputName">The absolute path to save the file to</param>
         public static void SaveFile(string fileContents, string outputName)
         {
+            var dir = Path.GetDirectoryName(outputName);
+            if (!Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
+
             File.WriteAllText(outputName, fileContents);
         }
 

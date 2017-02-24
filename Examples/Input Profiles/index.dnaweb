@@ -1,0 +1,5 @@
+<!--@ output index-full.html:wrapped @-->
+<!--@ output index-content.html @-->
+<!--@ include header.dnaweb:wrapped @-->
+    <h1>Header</h1>
+<!--@ include footer.dnaweb:wrapped @-->

@@ -19,19 +19,9 @@ namespace Dna.HtmlEngine.Core
         public bool IsPartial { get; set; }
 
         /// <summary>
-        /// A list of variables for the file
-        /// </summary>
-        public List<EngineVariable> Variables { get; set; } = new List<EngineVariable>();
-
-        /// <summary>
         /// A list of output file data
         /// </summary>
         public List<FileOutputData> OutputPaths { get; set; } = new List<FileOutputData>();
-
-        /// <summary>
-        /// The files full contents, that get's edit during the course of being edit
-        /// </summary>
-        public string FileContents { get; set; }
 
         /// <summary>
         /// Information about any error in processing the file
@@ -42,5 +32,11 @@ namespace Dna.HtmlEngine.Core
         /// Indicates if the processing of this file is still ok and has not had an error
         /// </summary>
         public bool Successful => string.IsNullOrEmpty(Error);
+
+
+        /// <summary>
+        /// The files full contents, that get's edit during the course of being edit
+        /// </summary>
+        public string UnprocessedFileContents { get; set; }
     }
 }

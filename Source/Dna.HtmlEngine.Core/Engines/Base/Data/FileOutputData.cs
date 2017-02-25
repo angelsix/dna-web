@@ -25,6 +25,11 @@ namespace Dna.HtmlEngine.Core
         public string FileContents { get; set; }
 
         /// <summary>
+        /// The compiled final content ready for saving
+        /// </summary>
+        public string CompiledContents { get; set; }
+
+        /// <summary>
         /// A list of variables for the file
         /// </summary>
         public List<EngineVariable> Variables { get; set; } = new List<EngineVariable>();

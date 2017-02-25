@@ -192,7 +192,10 @@ namespace Dna.HtmlEngine.Core
 
                 // Make sure we got a type
                 if (string.IsNullOrEmpty(type))
+                {
                     data.Error = $"Variable has not specified a type. {variable.XmlElement.ToString()}";
+                    return;
+                }
 
                 // Add property, leaving a newline for the next property
                 property += $"{indentString}public {type} {variable.Name} {{ get; set; }}{ GenerateValueSetter(type, variable.Value) }\r\n\r\n";

@@ -171,7 +171,7 @@ namespace Dna.HtmlEngine.Core
             ReplaceTag(output, match, string.Empty, removeNewline: false);
 
             // If there are no variables, just end
-            if (variables.Count == 0 )
+            if (variables.Count == 0)
                 return;
 
             // Start region (doesn't need indentation as the original is there)
@@ -253,12 +253,19 @@ namespace Dna.HtmlEngine.Core
             // Get each line
             var lines = new List<string>(comment.Split('\n'));
 
-            // Ignore empty lines if this is the last line
-            if (lines.Count > 1 && string.IsNullOrWhiteSpace(lines[lines.Count - 1]))
-                lines = lines.Take(lines.Count - 1).ToList();
-            // Ignore empty lines if this is the first line
-            if (lines.Count > 1 && string.IsNullOrWhiteSpace(lines[0]))
-                lines = lines.Skip(1).Take(lines.Count - 1).ToList();
+            // If it's a single line comment, just trim it
+            if (lines.Count == 1)
+                lines[0] = lines[0]?.Trim();
+            else
+            {
+
+                // Ignore empty lines if this is the last line
+                if (lines.Count > 1 && string.IsNullOrWhiteSpace(lines[lines.Count - 1]))
+                    lines = lines.Take(lines.Count - 1).ToList();
+                // Ignore empty lines if this is the first line
+                if (lines.Count > 1 && string.IsNullOrWhiteSpace(lines[0]))
+                    lines = lines.Skip(1).Take(lines.Count - 1).ToList();
+            }
 
             // If every comment has at least the indent number of spaces
             // Presume they are doing a multi-line comment and remove them

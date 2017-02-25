@@ -22,7 +22,7 @@ namespace Dna.HtmlEngine.Core
 
         /// <summary>
         /// The regex to match special tags containing up to 2 values
-        /// For example: <!--@ include header --> to include the file header._dnaweb or header.dnaweb if found
+        /// For example: <!--@ include header @--> to include the file header._dnaweb or header.dnaweb if found
         /// </summary>
         protected string mStandard2GroupRegex = @"<!--@\s*(\w+)\s*(.*?)\s*@-->";
 
@@ -120,6 +120,30 @@ namespace Dna.HtmlEngine.Core
         protected virtual Task PostProcessFile(FileProcessingData data) => Task.FromResult(0);
 
         /// <summary>
+        /// Any pre-processing to do before generating the output content
+        /// </summary>
+        /// <param name="data">The file processing information</param>
+        /// <param name="output">The file output information</param>
+        /// <returns></returns>
+        protected virtual Task PreGenerateFile(FileProcessingData data, FileOutputData output) => Task.FromResult(0);
+
+        /// <summary>
+        /// Any post-processing to do after generating the output content
+        /// </summary>
+        /// <param name="data">The file processing information</param>
+        /// <param name="output">The file output information</param>
+        /// <returns></returns>
+        protected virtual Task PostGenerateFile(FileProcessingData data, FileOutputData output) => Task.FromResult(0);
+
+        /// <summary>
+        /// Any post-processing to do after the file has been saved
+        /// </summary>
+        /// <param name="data">The file processing information</param>
+        /// <param name="output">The file output information</param>
+        /// <returns></returns>
+        protected virtual Task PostSaveFile(FileProcessingData data, FileOutputData output) => Task.FromResult(0);
+
+        /// <summary>
         /// The processing action to perform when the given file has been edited
         /// </summary>
         /// <param name="path"></param>
@@ -189,31 +213,37 @@ namespace Dna.HtmlEngine.Core
                     });
 
                 // Generate each output
-                processingData.OutputPaths.ForEach(outputPath =>
+                processingData.OutputPaths.ForEach(async (outputPath) =>
                 {
+                    // Any pre processing
+                    await PreGenerateFile(processingData, outputPath);
+
                     // Compile output (replace variables with values)
-                    var compiledContent = GenerateOutput(processingData, outputPath);
+                    GenerateOutput(processingData, outputPath);
 
                     // If we failed, ignore (it will already be logged)
                     if (!processingData.Successful)
                         return;
 
-                    // Otherwise save the contents
-                    else
-                    {
-                        try
-                        {
-                            // Save the contents
-                            FileManager.SaveFile(compiledContent, outputPath.FullPath);
+                    // Any post processing
+                    await PostGenerateFile(processingData, outputPath);
 
-                            // Log it
-                            Log($"Generated file {outputPath.FullPath}");
-                        }
-                        catch (Exception ex)
-                        {
-                            // If any failed, return the failure
-                            processingData.Error += $"{System.Environment.NewLine}Error saving generated file {outputPath.FullPath}. {ex.Message}. {System.Environment.NewLine}";
-                        }
+                    // Save the contents
+                    try
+                    {
+                        // Save the contents
+                        FileManager.SaveFile(outputPath.CompiledContents, outputPath.FullPath);
+
+                        // Any pre processing
+                        await PostSaveFile(processingData, outputPath);
+
+                        // Log it
+                        Log($"Generated file {outputPath.FullPath}");
+                    }
+                    catch (Exception ex)
+                    {
+                        // If any failed, return the failure
+                        processingData.Error += $"{System.Environment.NewLine}Error saving generated file {outputPath.FullPath}. {ex.Message}. {System.Environment.NewLine}";
                     }
                 });
             }
@@ -941,7 +971,7 @@ namespace Dna.HtmlEngine.Core
         /// </summary>
         /// <param name="data">The file processing data</param>
         /// <param name="output">The output data to generate the contents for</param>
-        protected string GenerateOutput(FileProcessingData data, FileOutputData output)
+        protected void GenerateOutput(FileProcessingData data, FileOutputData output)
         {
             // Create a match variable
             Match match = null;
@@ -967,19 +997,36 @@ namespace Dna.HtmlEngine.Core
                     string.Equals(v.Name, variable, StringComparison.CurrentCultureIgnoreCase) &&
                     string.Equals(v.ProfileName, output.ProfileName, StringComparison.CurrentCultureIgnoreCase));
 
+                // If this was a profile-specific variable, fallback to the standard variable 
+                if (variableValue == null && !string.IsNullOrEmpty(output.ProfileName))
+                    variableValue = output.Variables.FirstOrDefault(v =>
+                        string.Equals(v.Name, variable, StringComparison.CurrentCultureIgnoreCase) &&
+                        string.IsNullOrEmpty(v.ProfileName));
+
                 // Error if we don't get one
                 if (variableValue == null)
                 {
                     data.Error = $"Variable not found {variable} for profile '{output.ProfileName}'";
-                    return null;
+                    output.CompiledContents = null;
+                    return;
                 }
 
                 // Replace with the value
                 ReplaceTag(ref contents, match, variableValue?.Value);
             }
 
-            // Return results
-            return contents;
+            // Set results
+            output.CompiledContents = contents;
+        }
+
+        /// <summary>
+        /// Changes the file extension to the default output file extension
+        /// </summary>
+        /// <param name="path">The full path to the file</param>
+        /// <returns></returns>
+        protected string GetDefaultOutputPath(string path)
+        {
+            return Path.Combine(Path.GetDirectoryName(path), Path.GetFileNameWithoutExtension(path) + this.OutputExtension);
         }
 
         #endregion
@@ -1001,7 +1048,14 @@ namespace Dna.HtmlEngine.Core
             foreach (var profileElement in xmlData.Root.Elements("Profile"))
             {
                 // Find any variables
-                ExtractVariables(data, output, profileElement, profileElement.Attribute("Name")?.Value);
+                ExtractVariables(data, output, profileElement, profileName: profileElement.Attribute("Name")?.Value);
+            }
+
+            // Groups
+            foreach (var groupElement in xmlData.Root.Elements("Group"))
+            {
+                // Find any variables
+                ExtractVariables(data, output, groupElement, profileName: groupElement.Attribute("Profile")?.Value, groupName: groupElement.Attribute("Name")?.Value);
             }
         }
 
@@ -1012,7 +1066,7 @@ namespace Dna.HtmlEngine.Core
         /// <param name="output">The file output data</param>
         /// <param name="element">The Xml element</param>
         /// <param name="profileName">The profile name, if explicitly specified</param>
-        protected void ExtractVariables(FileProcessingData data, FileOutputData output, XElement element, string profileName = null)
+        protected void ExtractVariables(FileProcessingData data, FileOutputData output, XElement element, string profileName = null, string groupName = null)
         {
             // Loop all elements with the name of variable
             foreach (var variableElement in element.Elements("Variable"))
@@ -1022,10 +1076,17 @@ namespace Dna.HtmlEngine.Core
                     // Create the variable
                     var variable = new EngineVariable
                     {
+                        XmlElement = variableElement,
                         Name = variableElement.Attribute("Name")?.Value,
                         ProfileName = variableElement.Attribute("Profile")?.Value ?? profileName,
-                        Value = variableElement.Value
+                        Group = variableElement.Attribute("Group")?.Value ?? groupName,
+                        Value = variableElement.Element("Value")?.Value ?? variableElement.Value,
+                        Comment = variableElement.Element("Comment")?.Value ?? variableElement.Attribute("Comment")?.Value
                     };
+
+                    // If we have no comment, look at previous element for a comment
+                    if (string.IsNullOrEmpty(variable.Comment) && variableElement.PreviousNode is XComment)
+                        variable.Comment = ((XComment)variableElement.PreviousNode).Value;
 
                     // Make sure we got a name at least
                     if (string.IsNullOrEmpty(variable.Name))
@@ -1149,20 +1210,6 @@ namespace Dna.HtmlEngine.Core
 
             // Return the results
             return paths;
-        }
-
-        #endregion
-
-        #region Output
-
-        /// <summary>
-        /// Changes the file extension to the default output file extension
-        /// </summary>
-        /// <param name="path">The full path to the file</param>
-        /// <returns></returns>
-        protected string GetDefaultOutputPath(string path)
-        {
-            return Path.Combine(Path.GetDirectoryName(path), Path.GetFileNameWithoutExtension(path) + this.OutputExtension);
         }
 
         #endregion

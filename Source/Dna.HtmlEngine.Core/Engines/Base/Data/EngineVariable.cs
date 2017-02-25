@@ -1,4 +1,6 @@
-﻿namespace Dna.HtmlEngine.Core
+﻿using System.Xml.Linq;
+
+namespace Dna.HtmlEngine.Core
 {
     /// <summary>
     /// A variable used in an engine for replacing values in a document
@@ -22,6 +24,21 @@
         /// The variable value
         /// </summary>
         public string Value { get; set; }
+
+        /// <summary>
+        /// The group this variable belongs to, if any
+        /// </summary>
+        public string Group { get; set; }
+
+        /// <summary>
+        /// The comment for this variable
+        /// </summary>
+        public string Comment { get; set; }
+
+        /// <summary>
+        /// The original Xml element of this variable
+        /// </summary>
+        public XElement XmlElement { get; set; }
 
         #endregion
 

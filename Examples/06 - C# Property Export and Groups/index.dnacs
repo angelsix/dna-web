@@ -1,0 +1,33 @@
+<!--@ output index.cs @-->
+<!--$
+<Data>
+
+    <!-- The DomId values for the application -->
+    <Group Name="DomIds" Profile="">
+
+        <!-- Comment for data1 -->
+        <Variable Name="MyString1" Type="string">value1</Variable>
+        <!-- 
+        This is a multiline comment
+            that maintains spacing
+        and indentation level
+         -->
+        <Variable Name="MyString2" Type="string">value2</Variable>
+        <!-- Another comment -->
+        <Variable Name="MyString3" Type="string">the last value</Variable>
+
+    </Group>
+
+</Data>
+$-->
+
+namespace SomeNamespace
+{
+    /// <summary>
+    /// A generated class from DnaWeb
+    /// </summary>
+    public class LdkWebApplication
+    {
+        <!--# properties group=DomIds #-->
+    }
+}

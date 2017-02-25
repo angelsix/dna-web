@@ -204,14 +204,6 @@ namespace Dna.HtmlEngine.Core
 
             if (!processingData.IsPartial)
             {
-                // If we have no outputs specified, add the default
-                if (processingData.OutputPaths.Count == 0)
-                    // Get default output name
-                    processingData.OutputPaths.Add(new FileOutputData {
-                        FullPath = GetDefaultOutputPath(processingData.FullPath),
-                        FileContents = processingData.UnprocessedFileContents
-                    });
-
                 // Generate each output
                 processingData.OutputPaths.ForEach(async (outputPath) =>
                 {
@@ -548,6 +540,18 @@ namespace Dna.HtmlEngine.Core
 
             // Restore contents
             data.UnprocessedFileContents = tempContents;
+
+            // If this isn't a partial class, and we have no outputs specified
+            // Create a default one
+            if (!data.IsPartial && data.OutputPaths.Count == 0)
+            {
+                // Get default output name
+                data.OutputPaths.Add(new FileOutputData
+                {
+                    FullPath = GetDefaultOutputPath(data.FullPath),
+                    FileContents = data.UnprocessedFileContents
+                });
+            }
 
             // Now set file contents
             data.OutputPaths.ForEach(output => output.FileContents = data.UnprocessedFileContents);

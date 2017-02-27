@@ -1088,6 +1088,10 @@ namespace Dna.HtmlEngine.Core
                         Comment = variableElement.Element("Comment")?.Value ?? variableElement.Attribute("Comment")?.Value
                     };
 
+                    // Convert string empty profile names back to null
+                    if (variable.ProfileName == string.Empty)
+                        variable.ProfileName = null;
+
                     // If we have no comment, look at previous element for a comment
                     if (string.IsNullOrEmpty(variable.Comment) && variableElement.PreviousNode is XComment)
                         variable.Comment = ((XComment)variableElement.PreviousNode).Value;
@@ -1194,6 +1198,10 @@ namespace Dna.HtmlEngine.Core
 
                 // Make sure we have enough groups
                 if (match.Groups.Count < 3)
+                    continue;
+
+                // Make sure this is an include
+                if (!string.Equals(match.Groups[1].Value, "include"))
                     continue;
 
                 // Get include path

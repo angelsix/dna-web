@@ -356,7 +356,7 @@ namespace Dna.HtmlEngine.Core
                         return;
 
                     // Otherwise, load the monitor path
-                    monitor = monitor.Substring("monitor: ".Length);
+                    monitor = monitor.Substring("monitor:".Length).Trim();
 
                     // Convert path to full path
                     if (Path.IsPathRooted(monitor))

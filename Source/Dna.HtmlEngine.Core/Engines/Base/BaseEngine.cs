@@ -53,7 +53,7 @@ namespace Dna.HtmlEngine.Core
         /// <summary>
         /// The time in milliseconds to wait for file edits to stop occurring before processing the file
         /// </summary>
-        public int ProcessDelay { get; set; } = 100;
+        public int ProcessDelay { get; set; } = 300;
 
         /// <summary>
         /// The filename extensions to monitor for
@@ -158,7 +158,7 @@ namespace Dna.HtmlEngine.Core
                 return new EngineProcessResult { Success = false, Path = processingData.FullPath, Error = "File no longer exists" };
 
             // Read all the file into memory (it's ok we will never have large files they are text web files)
-            processingData.UnprocessedFileContents = FileManager.ReadAllText(processingData.FullPath);
+            processingData.UnprocessedFileContents = await FileManager.ReadAllText(processingData.FullPath);
 
             // Pre-processing
             await PreProcessFile(processingData);
@@ -248,7 +248,7 @@ namespace Dna.HtmlEngine.Core
                 Log($"Partial file edit. Updating referenced files to {path}...");
 
                 // Find all files references this path
-                var referencedFiles = FindReferencedFiles(path);
+                var referencedFiles = await FindReferencedFiles(path);
 
                 // Process any referenced files
                 foreach (var reference in referencedFiles)
@@ -1135,7 +1135,7 @@ namespace Dna.HtmlEngine.Core
         /// </summary>
         /// <param name="includePath">The path to look for being included in any of the files</param>
         /// <returns></returns>
-        protected List<string> FindReferencedFiles(string includePath)
+        protected async Task<List<string>> FindReferencedFiles(string includePath)
         {
             // New empty list
             var toProcess = new List<string>();
@@ -1150,16 +1150,16 @@ namespace Dna.HtmlEngine.Core
                 .ToList();
             
             // For each file, find all resolved references
-            allFiles.ForEach(file =>
+            foreach (var file in allFiles)
             {
                 // Get all resolved references
-                var references = GetResolvedIncludePaths(file);
+                var references = await GetResolvedIncludePaths(file);
 
                 // If any match this file...
                 if (references.Any(reference => string.Equals(reference, includePath, StringComparison.CurrentCultureIgnoreCase)))
                     // Add this file to be processed
                     toProcess.Add(file);
-            });
+            };
 
             // Return what we found
             return toProcess;
@@ -1170,7 +1170,7 @@ namespace Dna.HtmlEngine.Core
         /// </summary>
         /// <param name="filePath">The full path to the file to check</param>
         /// <returns></returns>
-        protected List<string> GetResolvedIncludePaths(string filePath)
+        protected async Task<List<string>> GetResolvedIncludePaths(string filePath)
         {
             // New blank list
             var paths = new List<string>();
@@ -1180,7 +1180,7 @@ namespace Dna.HtmlEngine.Core
                 return paths;
 
             // Read all the file into memory (it's ok we will never have large files they are text web files)
-            var fileContents = FileManager.ReadAllText(filePath);
+            var fileContents = await FileManager.ReadAllText(filePath);
 
             // Create a match variable
             Match match = null;
@@ -1211,6 +1211,10 @@ namespace Dna.HtmlEngine.Core
                 // If the name have a single : then the right half is the profile name
                 if (includePath.Count(c => c == ':') == 1)
                     includePath = includePath.Split(':')[0];
+
+                // Resolve any relative aspects of the path
+                if (!Path.IsPathRooted(includePath))
+                    includePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(filePath), includePath));
 
                 // Try and find the include file
                 FindIncludeFile(filePath, includePath, out string resolvedPath, returnContents: false);

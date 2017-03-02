@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Threading.Tasks;
 
 namespace Dna.HtmlEngine.Core
 {
@@ -36,9 +37,30 @@ namespace Dna.HtmlEngine.Core
         /// </summary>
         /// <param name="path">The full path to the file</param>
         /// <returns></returns>
-        public static string ReadAllText(string path)
+        public static async Task<string> ReadAllText(string path)
         {
-            return File.ReadAllText(path);
+            var i = 3;
+
+            // Try to read the file 3 times if it's failed due to a lock
+            while (i-- > 0)
+            {
+                try
+                {
+                    // Try and read the file
+                    return File.ReadAllText(path);
+                }
+                catch (IOException)
+                {
+                    // If this is the last attempt, just throw
+                    if (i == 0)
+                        throw;
+
+                    await Task.Delay(300);
+                }
+            }
+
+            // NOTE: We can never get here, but VS isn't smart enough to know that. So just throw an IOException if we got here
+            throw new IOException();
         }
     }
 }

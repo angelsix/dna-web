@@ -46,6 +46,11 @@ namespace Dna.HtmlEngine.Core
         public string MonitorPath { get; set; }
 
         /// <summary>
+        /// The generate files processing option on start up
+        /// </summary>
+        public GenerateOption GenerateOnStart { get; set; } = GenerateOption.None;
+
+        /// <summary>
         /// The desired default output extension for generated files if not overridden
         /// </summary>
         public string OutputExtension { get; set; } = ".dna";
@@ -146,12 +151,16 @@ namespace Dna.HtmlEngine.Core
         /// <summary>
         /// The processing action to perform when the given file has been edited
         /// </summary>
-        /// <param name="path"></param>
+        /// <param name="path">The absolute path of the file to process</param>
+        /// <param name="skipFiles">A list of absolute file paths to skip generation on, if any</param>
         /// <returns></returns>
-        protected async Task<EngineProcessResult> ProcessFile(string path)
+        protected async Task<EngineProcessResult> ProcessFile(string path, List<string> skipFiles = null)
         {
             // Create new processing data
             var processingData = new FileProcessingData { FullPath = path };
+
+            // Keep track of generated files
+            var generatedFiles = new List<string>();
 
             // Make sure the file exists
             if (!FileManager.FileExists(processingData.FullPath))
@@ -207,6 +216,13 @@ namespace Dna.HtmlEngine.Core
                 // Generate each output
                 processingData.OutputPaths.ForEach(async (outputPath) =>
                 {
+                    // Skip any files we want to skip
+                    if (skipFiles?.Any(toSkip => string.Equals(toSkip, outputPath.FullPath, StringComparison.CurrentCultureIgnoreCase)) == true)
+                    {
+                        Log($"Skipping already generated file {outputPath.FullPath}", type: LogType.Warning);
+                        return;
+                    }
+
                     // Any pre processing
                     await PreGenerateFile(processingData, outputPath);
 
@@ -229,6 +245,9 @@ namespace Dna.HtmlEngine.Core
                         // Any pre processing
                         await PostSaveFile(processingData, outputPath);
 
+                        // Add this to the generated list
+                        generatedFiles.Add(outputPath.FullPath);
+
                         // Log it
                         Log($"Generated file {outputPath.FullPath}");
                     }
@@ -241,7 +260,7 @@ namespace Dna.HtmlEngine.Core
             }
             else
             {
-                // If it is a partial file, searc the root monitor folder for all files with the extensions
+                // If it is a partial file, search the root monitor folder for all files with the extensions
                 // and search within those for a tag that includes this partial fie
                 // 
                 // Then fire off a process event for each of them
@@ -252,11 +271,18 @@ namespace Dna.HtmlEngine.Core
 
                 // Process any referenced files
                 foreach (var reference in referencedFiles)
-                    await ProcessFileChanged(reference);
+                {
+                    // Process partial
+                    var result = await ProcessFileChanged(reference, skipFiles);
+
+                    // Add generated files to list
+                    if (result.GeneratedFiles?.Length > 0)
+                        generatedFiles.AddRange(result.GeneratedFiles);
+                }
             }
 
             // Return result
-            return new EngineProcessResult { Success = processingData.Successful, Path = path, Error = processingData.Error };
+            return new EngineProcessResult { Success = processingData.Successful, Path = path, GeneratedFiles = generatedFiles.ToArray(), Error = processingData.Error };
         }
 
         #endregion
@@ -329,7 +355,45 @@ namespace Dna.HtmlEngine.Core
                     // Start watcher
                     watcher.Start();
                 });
+
+                // Now do startup generation
+                StartupGeneration();
             }
+        }
+
+        /// <summary>
+        /// Performs any startup generation that was specified
+        /// </summary>
+        private void StartupGeneration()
+        {
+            Task.Run(async () =>
+            {
+                // If there is nothing to do, just return
+                if (this.GenerateOnStart == GenerateOption.None)
+                    return;
+
+                // Find all paths
+                var allFiles = FindAllFiles();
+
+                // Keep a log of all files that have been generated already
+                // so we do not regenerate them
+                var generatedFiles = new List<string>();
+
+                // For each file
+                foreach (var file in allFiles)
+                {
+                    // Don't process files twice
+                    if (generatedFiles.Any(f => string.Equals(f, file, StringComparison.CurrentCultureIgnoreCase)))
+                        continue;
+
+                    // Process file
+                    var result = await ProcessFileChanged(file, generatedFiles);
+
+                    // Add any generated file outputs to list
+                    if (result.GeneratedFiles?.Length > 0)
+                        generatedFiles.AddRange(result.GeneratedFiles);
+                };
+            });
         }
 
         /// <summary>
@@ -343,30 +407,20 @@ namespace Dna.HtmlEngine.Core
             // Read config file for monitor path
             try
             {
+                // Look in base folder by default
                 var configFile = Path.Combine(System.AppContext.BaseDirectory, "dna.config");
+                
+                // Make sure file exists
                 if (File.Exists(configFile))
                 {
+                    // Get the configuration data in lines
                     var configData = File.ReadAllLines(configFile);
 
-                    // Try and find line starting with monitor: 
-                    var monitor = configData.FirstOrDefault(f => f.StartsWith("monitor: "));
+                    // Find monitor path
+                    FindSettingMonitorPath(configData);
 
-                    // If we didn't find it, ignore
-                    if (monitor == null)
-                        return;
-
-                    // Otherwise, load the monitor path
-                    monitor = monitor.Substring("monitor:".Length).Trim();
-
-                    // Convert path to full path
-                    if (Path.IsPathRooted(monitor))
-                        MonitorPath = monitor;
-                    // Else resolve the relative path
-                    else
-                        MonitorPath = Path.GetFullPath(Path.Combine(System.AppContext.BaseDirectory, monitor));
-
-                    // Log it
-                    Log($"Monitor path set to: {MonitorPath}");
+                    // Find generate on start option
+                    FindSettingGenerateOnStart(configData);
                 }
             }
             // Don't care about config file failures other than logging it
@@ -374,6 +428,60 @@ namespace Dna.HtmlEngine.Core
             {
                 Log("Failed to read or process dna.config file", message: ex.Message, type: LogType.Warning);
             }
+        }
+
+        /// <summary>
+        /// Looks for the monitor path setting in the configuration data
+        /// </summary>
+        /// <param name="configData">The configuration data</param>
+        private void FindSettingMonitorPath(string[] configData)
+        {
+            // Try and find line starting with monitor: 
+            var option = configData.FirstOrDefault(f => f.StartsWith("monitor: "));
+
+            // If we didn't find it, ignore
+            if (option == null)
+                return;
+
+            // Otherwise, load the monitor path
+            option = option.Substring("monitor:".Length).Trim();
+
+            // Convert path to full path
+            if (Path.IsPathRooted(option))
+                MonitorPath = option;
+            // Else resolve the relative path
+            else
+                MonitorPath = Path.GetFullPath(Path.Combine(System.AppContext.BaseDirectory, option));
+
+            // Log it
+            Log($"Monitor path set to: {MonitorPath}");
+        }
+
+        /// <summary>
+        /// Looks for the generate option on startup setting in the configuration data
+        /// </summary>
+        /// <param name="configData">The configuration data</param>
+        private void FindSettingGenerateOnStart(string[] configData)
+        {
+            // Try and find line starting with generateOnStart: 
+            var option = configData.FirstOrDefault(f => f.StartsWith("generateOnStart: "));
+
+            // If we didn't find it, ignore
+            if (option == null)
+                return;
+
+            // Otherwise, load the monitor path
+            option = option.Substring("generateOnStart:".Length).Trim();
+
+            // Convert value to enum (ignoring case)
+            if (!Enum.TryParse<GenerateOption>(option, true, out GenerateOption result))
+                return;
+
+            // Set result
+            this.GenerateOnStart = result;
+
+            // Log it
+            Log($"GenerateOnStart path set to: {GenerateOnStart}");
         }
 
         #endregion
@@ -394,8 +502,9 @@ namespace Dna.HtmlEngine.Core
         /// Called when a file has changed and needs processing
         /// </summary>
         /// <param name="path">The full path of the file to process</param>
+        /// <param name="skipFiles">A list of absolute file paths to skip generation on, if any</param>
         /// <returns></returns>
-        protected async Task ProcessFileChanged(string path)
+        protected async Task<EngineProcessResult> ProcessFileChanged(string path, List<string> skipFiles = null)
         {
             try
             {
@@ -403,7 +512,7 @@ namespace Dna.HtmlEngine.Core
                 Log($"Processing file {path}...", type: LogType.Information);
 
                 // Process the file
-                var result = await ProcessFile(path);
+                var result = await ProcessFile(path, skipFiles);
 
                 // Check if we have an unknown response
                 if (result == null)
@@ -427,20 +536,28 @@ namespace Dna.HtmlEngine.Core
                     // Log the message
                     Log($"Failed to processed file {path}", message: result.Error, type: LogType.Error);
                 }
+
+                return result;
             }
             // Catch any unexpected failures
             catch (Exception ex)
             {
-                // Generate an unexpected error report
-                ProcessFailed(new EngineProcessResult
+                // Create result
+                var failedResult = new EngineProcessResult
                 {
                     Path = path,
                     Error = ex.Message,
                     Success = false,
-                });
+                };
+
+                // Generate an unexpected error report
+                ProcessFailed(failedResult);
 
                 // Log the message
                 Log($"Unexpected fail to processed file {path}", message: ex.Message, type: LogType.Error);
+
+                // Return the result
+                return failedResult;                
             }
         }
 
@@ -1145,9 +1262,7 @@ namespace Dna.HtmlEngine.Core
                 return toProcess;
 
             // Find all files in the monitor path
-            var allFiles = Directory.EnumerateFiles(this.MonitorPath, "*.*", SearchOption.AllDirectories)
-                .Where(file => this.EngineExtensions.Any(ex => Regex.IsMatch(Path.GetFileName(file), ex)))
-                .ToList();
+            var allFiles = FindAllFiles();
             
             // For each file, find all resolved references
             foreach (var file in allFiles)
@@ -1163,6 +1278,17 @@ namespace Dna.HtmlEngine.Core
 
             // Return what we found
             return toProcess;
+        }
+
+        /// <summary>
+        /// Finds all files in the monitor folder that match this engines extension types
+        /// </summary>
+        /// <returns></returns>
+        private List<string> FindAllFiles()
+        {
+            return Directory.EnumerateFiles(this.MonitorPath, "*.*", SearchOption.AllDirectories)
+                           .Where(file => this.EngineExtensions.Any(ex => Regex.IsMatch(Path.GetFileName(file), ex)))
+                           .ToList();
         }
 
         /// <summary>

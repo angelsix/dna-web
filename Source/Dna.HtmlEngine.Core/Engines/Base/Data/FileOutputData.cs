@@ -18,7 +18,6 @@ namespace Dna.HtmlEngine.Core
         /// </summary>
         public string ProfileName { get; set; }
 
-
         /// <summary>
         /// The files full contents, that get's edit during the course of being edit
         /// </summary>

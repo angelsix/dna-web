@@ -6,6 +6,18 @@
 *.user
 *.sln.docstates
 
+Examples/*.htm
+Examples/*.html
+Examples/*/*.htm
+Examples/*/*.html
+Examples/*/*/*.htm
+Examples/*/*/*.html
+
+Examples/*.cs
+Examples/*/*.cs
+Examples/*/*/*.cs
+
+
 project.lock.json
 
 node_modules/

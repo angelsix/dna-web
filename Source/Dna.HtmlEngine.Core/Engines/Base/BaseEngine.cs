@@ -46,6 +46,11 @@ namespace Dna.HtmlEngine.Core
         public string MonitorPath { get; set; }
 
         /// <summary>
+        /// The path to a configuration file to try and load. If not set then default locations will be searched
+        /// </summary>
+        public string ConfigurationFilePath { get; set; }
+
+        /// <summary>
         /// The generate files processing option on start up
         /// </summary>
         public GenerateOption GenerateOnStart { get; set; } = GenerateOption.None;
@@ -304,96 +309,91 @@ namespace Dna.HtmlEngine.Core
         /// <summary>
         /// Starts the engine ready to handle processing of the specified files
         /// </summary>
-        public void Start()
+        public async Task Start()
         {
-            // Lock this class so only one call can happen at a time
-            lock (this)
+            // TODO: Add async lock here to prevent multiple calls
+
+            // Dipose of any previous engine setup
+            Dispose();
+
+            // Make sure we have extensions
+            if (this.EngineExtensions?.Count == 0)
+                throw new InvalidOperationException("No engine extensions specified");
+
+            // Load settings
+            LoadSettings();
+
+            // Resolve path
+            if (!Path.IsPathRooted(MonitorPath))
+                MonitorPath = Path.GetFullPath(Path.Combine(System.AppContext.BaseDirectory, MonitorPath));
+
+            // Let listener know we started
+            Started();
+
+            // Log the message
+            Log($"Engine started listening to '{this.MonitorPath}' with {this.ProcessDelay}ms delay...");
+
+            // Create a new list of watchers
+            mWatchers = new List<FolderWatcher>();
+
+            // We need to listen out for file changes per extension
+            EngineExtensions.ForEach(extension => mWatchers.Add(new FolderWatcher
             {
-                // Dipose of any previous engine setup
-                Dispose();
+                Filter = "*" + extension,
+                Path = MonitorPath,
+                UpdateDelay = ProcessDelay
+            }));
 
-                // Make sure we have extensions
-                if (this.EngineExtensions?.Count == 0)
-                    throw new InvalidOperationException("No engine extensions specified");
+            // Listen on all watchers
+            mWatchers.ForEach(watcher =>
+            {
+                // Listen for file changes
+                watcher.FileChanged += Watcher_FileChanged;
 
-                // Load settings
-                LoadSettings();
-
-                // Resolve path
-                if (!Path.IsPathRooted(MonitorPath))
-                    MonitorPath = Path.GetFullPath(Path.Combine(System.AppContext.BaseDirectory, MonitorPath));
-
-                // Let listener know we started
-                Started();
+                // Inform listener
+                StartedWatching(watcher.Filter);
 
                 // Log the message
-                Log($"Engine started listening to '{this.MonitorPath}' with {this.ProcessDelay}ms delay...");
-                    
-                // Create a new list of watchers
-                mWatchers = new List<FolderWatcher>();
+                Log($"Engine listening for file type {watcher.Filter}");
 
-                // We need to listen out for file changes per extension
-                EngineExtensions.ForEach(extension => mWatchers.Add(new FolderWatcher
-                {
-                    Filter = "*" + extension, 
-                    Path = MonitorPath,
-                    UpdateDelay = ProcessDelay
-                }));
+                // Start watcher
+                watcher.Start();
+            });
 
-                // Listen on all watchers
-                mWatchers.ForEach(watcher =>
-                {
-                    // Listen for file changes
-                    watcher.FileChanged += Watcher_FileChanged;
-
-                    // Inform listener
-                    StartedWatching(watcher.Filter);
-
-                    // Log the message
-                    Log($"Engine listening for file type {watcher.Filter}");
-
-                    // Start watcher
-                    watcher.Start();
-                });
-
-                // Now do startup generation
-                StartupGeneration();
-            }
+            // Now do startup generation
+            await StartupGeneration();
         }
 
         /// <summary>
         /// Performs any startup generation that was specified
         /// </summary>
-        private void StartupGeneration()
+        private async Task StartupGeneration()
         {
-            Task.Run(async () =>
+            // If there is nothing to do, just return
+            if (this.GenerateOnStart == GenerateOption.None)
+                return;
+
+            // Find all paths
+            var allFiles = FindAllFiles();
+
+            // Keep a log of all files that have been generated already
+            // so we do not regenerate them
+            var generatedFiles = new List<string>();
+
+            // For each file
+            foreach (var file in allFiles)
             {
-                // If there is nothing to do, just return
-                if (this.GenerateOnStart == GenerateOption.None)
-                    return;
+                // Don't process files twice
+                if (generatedFiles.Any(f => string.Equals(f, file, StringComparison.CurrentCultureIgnoreCase)))
+                    continue;
 
-                // Find all paths
-                var allFiles = FindAllFiles();
+                // Process file
+                var result = await ProcessFileChanged(file, generatedFiles);
 
-                // Keep a log of all files that have been generated already
-                // so we do not regenerate them
-                var generatedFiles = new List<string>();
-
-                // For each file
-                foreach (var file in allFiles)
-                {
-                    // Don't process files twice
-                    if (generatedFiles.Any(f => string.Equals(f, file, StringComparison.CurrentCultureIgnoreCase)))
-                        continue;
-
-                    // Process file
-                    var result = await ProcessFileChanged(file, generatedFiles);
-
-                    // Add any generated file outputs to list
-                    if (result.GeneratedFiles?.Length > 0)
-                        generatedFiles.AddRange(result.GeneratedFiles);
-                };
-            });
+                // Add any generated file outputs to list
+                if (result.GeneratedFiles?.Length > 0)
+                    generatedFiles.AddRange(result.GeneratedFiles);
+            };
         }
 
         /// <summary>
@@ -401,15 +401,31 @@ namespace Dna.HtmlEngine.Core
         /// </summary>
         private void LoadSettings()
         {
-            // Default monitor path of this folder
-            MonitorPath = System.AppContext.BaseDirectory;
+            // Default monitor path of this folder if one is not set
+            if (string.IsNullOrEmpty(MonitorPath))
+                MonitorPath = System.AppContext.BaseDirectory;
 
-            // Read config file for monitor path
+            // Try specified configuration file
+            if (TryLoadConfigurationFile(this.ConfigurationFilePath))
+                return;
+
+            // Now try looking in base folder 
+            if (TryLoadConfigurationFile(Path.Combine(System.AppContext.BaseDirectory, "dna.config")))
+                return;
+
+            // Log settings
+            Log($"Generate On Start = {this.GenerateOnStart}");
+        }
+
+        /// <summary>
+        /// Attempts to load a configuration file
+        /// </summary>
+        /// <param name="configFile">The path of the configuration file</param>
+        /// <returns>True if succefully loaded</returns>
+        private bool TryLoadConfigurationFile(string configFile)
+        {
             try
             {
-                // Look in base folder by default
-                var configFile = Path.Combine(System.AppContext.BaseDirectory, "dna.config");
-                
                 // Make sure file exists
                 if (File.Exists(configFile))
                 {
@@ -421,6 +437,11 @@ namespace Dna.HtmlEngine.Core
 
                     // Find generate on start option
                     FindSettingGenerateOnStart(configData);
+
+                    // Log the message
+                    Log($"Loaded settings from '{configFile}'");
+
+                    return true;
                 }
             }
             // Don't care about config file failures other than logging it
@@ -428,6 +449,8 @@ namespace Dna.HtmlEngine.Core
             {
                 Log("Failed to read or process dna.config file", message: ex.Message, type: LogType.Warning);
             }
+
+            return false;
         }
 
         /// <summary>
@@ -557,7 +580,7 @@ namespace Dna.HtmlEngine.Core
                 Log($"Unexpected fail to processed file {path}", message: ex.Message, type: LogType.Error);
 
                 // Return the result
-                return failedResult;                
+                return failedResult;
             }
         }
 
@@ -846,7 +869,7 @@ namespace Dna.HtmlEngine.Core
             {
                 // Set profile path
                 // Find first index of a space or newline
-                profileName = inlineData.Substring(1, inlineData.IndexOfAny(new [] { ' ', '\r', '\n' }) - 1);
+                profileName = inlineData.Substring(1, inlineData.IndexOfAny(new[] { ' ', '\r', '\n' }) - 1);
 
                 // Set inline data (+2 to exclude the space after the profile name and the starting :
                 inlineData = inlineData.Substring(profileName.Length + 2);
@@ -1263,7 +1286,7 @@ namespace Dna.HtmlEngine.Core
 
             // Find all files in the monitor path
             var allFiles = FindAllFiles();
-            
+
             // For each file, find all resolved references
             foreach (var file in allFiles)
             {

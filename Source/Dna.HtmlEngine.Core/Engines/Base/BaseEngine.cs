@@ -29,7 +29,7 @@ namespace Dna.HtmlEngine.Core
         /// <summary>
         /// The regex to match special tags containing variables and data (which are stored as XML inside the tag)
         /// </summary>
-        protected string mStandardVariableRegex = @"<!--\$(.*)\$-->";
+        protected string mStandardVariableRegex = @"<!--\$(.+?(?=\$-->]*))\$-->";
 
         /// <summary>
         /// The regex used to find variables to be replaced with the values

@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "Dna.Web.CommandLine": {
+      "commandName": "Project"
+    }
+  }
+}

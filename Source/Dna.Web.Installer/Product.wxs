@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Common includes -->
+<?include Common.wxi?>
+
+<!-- Set a specific product code based on the processor architecture build variable -->
+<?if $(var.Platform)=x64 ?>
+<?define ProductCode = "{E23326CD-D816-48BB-BA0A-5C1FC2F40E5F}" ?>
+<?else ?>
+<?define ProductCode = "{C9ADB44D-3433-4386-9DEE-B89E51ED200B}" ?>
+<?endif ?>
+<?define UpgradeCode = "{452D79DF-DD6D-4904-B047-530C37367094}" ?>
+
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  
+  <Product Id="$(var.ProductCode)" 
+           Name="!(loc.ProductName_$(var.Platform)) $(var.ProductVersionFull)"
+           Language="1033"
+           Version="$(var.ProductVersionFull)"
+           Manufacturer="$(var.CompanyName)" 
+           UpgradeCode="$(var.UpgradeCode)">
+
+    <Package InstallerVersion="200"
+             InstallScope="perMachine"
+             Compressed="yes"
+             Keywords="!(loc.Keywords)"
+             Description="!(loc.Description)"
+             Comments="!(loc.Comments)"
+             Languages="!(loc.Language)"
+             Manufacturer="$(var.CompanyName)"
+             InstallPrivileges="elevated"
+             Platform="$(var.Platform)" />
+
+    <!-- Downgrade error message -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    
+    <!-- Use default media details (.cab file) -->
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Icon -->
+    <Icon Id="icon.ico" SourceFile="$(var.Dna.Web.CommandLine.ProjectDir)\app-icon.ico"/>
+    <Icon Id="edit.ico" SourceFile="$(var.Dna.Web.CommandLine.ProjectDir)\edit-icon.ico"/>
+
+    <!-- Add/Remove Programs Support -->
+    <Property Id="ARPURLINFOABOUT">http://www.batchprocess.co.uk/</Property>
+    <Property Id="ARPPRODUCTICON">icon.ico</Property>
+    
+    <!-- User interface -->
+    <UIRef Id="WixUI_Minimal" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.ProjectDir)\Assets\license.rtf" />
+    <WixVariable Id="WixUIBannerBmp" Value="$(var.ProjectDir)\Assets\Banner.bmp" />
+    <WixVariable Id="WixUIDialogBmp" Value="$(var.ProjectDir)\Assets\Background.bmp" />
+
+    <Feature Id="ProductFeature" Title="DnaWeb" Level="1">
+      
+      <!-- Our Stuff -->
+      <ComponentGroupRef Id="ProductComponents" />
+
+      <!-- Directories in Directories.wxs -->
+
+      <!-- Components in Components.wxs -->
+
+    </Feature>
+    
+    <!-- TODO: Detect .Net Core prerequisite -->
+
+  </Product>
+
+</Wix>

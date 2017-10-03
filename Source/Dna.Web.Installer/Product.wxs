@@ -42,7 +42,7 @@
     <Icon Id="icon.ico" SourceFile="$(var.Dna.Web.CommandLine.ProjectDir)\app-icon.ico"/>
 
     <!-- Add/Remove Programs Support -->
-    <Property Id="ARPURLINFOABOUT">http://www.batchprocess.co.uk/</Property>
+    <Property Id="ARPURLINFOABOUT">https://github.com/angelsix/dna-web</Property>
     <Property Id="ARPPRODUCTICON">icon.ico</Property>
     
     <!-- User interface -->

@@ -8,8 +8,6 @@
   <String Id="Comments">An interpretation engine for static web formats</String>
   <String Id="Keywords">DNA Web</String>
   
-  <String Id="DotNetCoreMissing">Please install .Net Core 2.0 from https://www.microsoft.com/net/download/core#/runtime. DnaWeb requires .Net Core 2.0 or higher.</String>
-
   <!-- Language Code -->
   <String Id="Language">1033</String>
 

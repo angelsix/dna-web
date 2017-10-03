@@ -11,12 +11,13 @@
 <?endif ?>
 <?define UpgradeCode = "{452D79DF-DD6D-4904-B047-530C37367094}" ?>
 
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
   
   <Product Id="$(var.ProductCode)" 
-           Name="!(loc.ProductName_$(var.Platform)) $(var.ProductVersionFull)"
+           Name="!(loc.ProductName_$(var.Platform)) $(var.BuildVersion)"
            Language="1033"
-           Version="$(var.ProductVersionFull)"
+           Version="$(var.BuildVersion)"
            Manufacturer="$(var.CompanyName)" 
            UpgradeCode="$(var.UpgradeCode)">
 
@@ -39,7 +40,6 @@
 
     <!-- Icon -->
     <Icon Id="icon.ico" SourceFile="$(var.Dna.Web.CommandLine.ProjectDir)\app-icon.ico"/>
-    <Icon Id="edit.ico" SourceFile="$(var.Dna.Web.CommandLine.ProjectDir)\edit-icon.ico"/>
 
     <!-- Add/Remove Programs Support -->
     <Property Id="ARPURLINFOABOUT">http://www.batchprocess.co.uk/</Property>
@@ -55,14 +55,13 @@
       
       <!-- Our Stuff -->
       <ComponentGroupRef Id="ProductComponents" />
+      <ComponentGroupRef Id="DnaWeb" />
 
       <!-- Directories in Directories.wxs -->
 
       <!-- Components in Components.wxs -->
 
     </Feature>
-    
-    <!-- TODO: Detect .Net Core prerequisite -->
 
   </Product>
 

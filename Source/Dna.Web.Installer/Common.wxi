@@ -4,19 +4,7 @@
   <!-- Company Details -->
   <?define CompanyName = "AngelSix Ltd"?>
 
-  <!-- Version -->
-  <?define Version.Major = "0" ?>
-  <?define Version.Minor = "1" ?>
-  <?define Version.Revision = "0" ?>
-  <?define Version.Build = "1" ?>
-
-  <!-- Full version number used for things like upgrade checks -->
-  <?define ProductVersionFull = "$(var.Version.Major).$(var.Version.Minor).$(var.Version.Revision).$(var.Version.Build)" ?>
-
   <!-- Install Folder Name -->
   <?define InstallFolderName = "DnaWeb" ?>
-
-  <!-- Output filename -->
-  <?define ProductVersionFull = "$(var.Version.Major).$(var.Version.Minor).$(var.Version.Revision).$(var.Version.Build)" ?>
 
 </Include>

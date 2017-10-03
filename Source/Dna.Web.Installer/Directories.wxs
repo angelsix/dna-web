@@ -20,7 +20,7 @@
       <?if $(var.Platform)=x64 ?>
       <Directory Id="ProgramFiles64Folder">
         <Directory Id="ProgramFolder64" Name="$(var.InstallFolderName)">
-          <Directory Id="INSTALLFOLDER" Name="$(var.ProductVersionFull)" />
+          <Directory Id="INSTALLFOLDER" Name="$(var.BuildVersion)" />
         </Directory>
       </Directory>
 
@@ -28,7 +28,7 @@
 
       <Directory Id="ProgramFilesFolder">
         <Directory Id="ProgramFolder32" Name="$(var.InstallFolderName)">
-          <Directory Id="INSTALLFOLDER" Name="$(var.ProductVersionFull)" />
+          <Directory Id="INSTALLFOLDER" Name="$(var.BuildVersion)" />
         </Directory>
       </Directory>
 

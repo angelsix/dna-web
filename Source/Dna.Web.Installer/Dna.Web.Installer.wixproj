@@ -81,7 +81,7 @@
     </GetAssemblyIdentity>
 
     <!-- Rename and move final MSI to Installs folder -->
-    <Exec Command="if not exists Installs mkdir Installs" />
+    <Exec Command="if not exist Installs mkdir Installs" />
     <Exec Command="move bin\$(Configuration)\$(OutputName).msi Installs\DnaWeb-%(AssemblyVersion.Version)-$(Configuration)-$(Platform).msi" />
   </Target>
 </Project>

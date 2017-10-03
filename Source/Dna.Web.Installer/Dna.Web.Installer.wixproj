@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" InitialTargets="EnsureWixToolsetInstalled" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>1.0.0.0</ProductVersion>
+    <ProjectGuid>5e8eb9ec-9d40-4a93-a6b9-2f25dfbca43f</ProjectGuid>
+    <SchemaVersion>2.0</SchemaVersion>
+    <OutputName>DnaWeb-$(Configuration)-$(Platform)</OutputName>
+    <OutputType>Package</OutputType>
+    <Cultures>;</Cultures>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
+    <DefineConstants>Debug</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Components.wxs" />
+    <Compile Include="ComponentsDnaWeb.wxs" />
+    <Compile Include="Directories.wxs" />
+    <Compile Include="Product.wxs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Common.wxi" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Common.wxl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Dna.Web.CommandLine\Dna.Web.CommandLine.csproj">
+      <Name>Dna.Web.CommandLine</Name>
+      <Project>{6e684f42-fbbb-440b-a0e4-f1f7056cf555}</Project>
+      <Private>True</Private>
+      <DoNotHarvest>True</DoNotHarvest>
+      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
+      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <WixExtension Include="WixUIExtension">
+      <HintPath>$(WixExtDir)\WixUIExtension.dll</HintPath>
+      <Name>WixUIExtension</Name>
+    </WixExtension>
+  </ItemGroup>
+  <Import Project="$(WixTargetsPath)" Condition=" '$(WixTargetsPath)' != '' " />
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets" Condition=" '$(WixTargetsPath)' == '' AND Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets') " />
+  <Target Name="EnsureWixToolsetInstalled" Condition=" '$(WixTargetsImported)' != 'true' ">
+    <Error Text="The WiX Toolset v3.11 (or newer) build tools must be installed to build this project. To download the WiX Toolset, see http://wixtoolset.org/releases/" />
+  </Target>
+  <Target Name="BeforeBuild">
+    <!-- Clean old publish folder first -->
+    <Exec Command="rd /s /q ..\Dna.Web.CommandLine\bin\$(Configuration)\netcoreapp2.0\win-$(Platform)" />
+    <!-- Build & Publish again -->
+    <Exec Command="dotnet publish ..\Dna.Web.CommandLine\Dna.Web.CommandLine.csproj -c $(Configuration) -r win-$(Platform)" />
+    <PropertyGroup>
+      <LinkerBaseInputPaths>..\Dna.Web.CommandLine\bin\$(Configuration)\netcoreapp2.0\win-$(Platform)\publish</LinkerBaseInputPaths>
+    </PropertyGroup>
+    <!-- Get assembly version from file -->
+    <GetAssemblyIdentity AssemblyFiles="..\Dna.Web.CommandLine\bin\$(Configuration)\netcoreapp2.0\win-$(Platform)\publish\DnaWeb.dll">
+      <Output TaskParameter="Assemblies" ItemName="AssemblyVersion" />
+    </GetAssemblyIdentity>
+    <!-- Define constants version number and base path -->
+    <PropertyGroup>
+      <DefineConstants>BuildVersion=%(AssemblyVersion.Version);BasePath=..\Dna.Web.CommandLine\bin\$(Configuration)\netcoreapp2.0\win-$(Platform)\publish</DefineConstants>
+    </PropertyGroup>
+    <HeatDirectory OutputFile="ComponentsDnaWeb.wxs" DirectoryRefId="INSTALLFOLDER" ComponentGroupName="DnaWeb" SuppressCom="true" Directory="..\Dna.Web.CommandLine\bin\$(Configuration)\netcoreapp2.0\win-$(Platform)\publish" SuppressFragments="true" SuppressRegistry="true" SuppressRootDirectory="true" AutoGenerateGuids="false" GenerateGuidsNow="true" ToolPath="$(WixToolPath)" PreprocessorVariable="var.BasePath" Transforms="RemovePdbs.xslt" />
+  </Target>
+  <Target Name="AfterBuild">
+    <!-- Get assembly version from file -->
+    <GetAssemblyIdentity AssemblyFiles="..\Dna.Web.CommandLine\bin\$(Configuration)\netcoreapp2.0\win-$(Platform)\publish\DnaWeb.dll">
+      <Output TaskParameter="Assemblies" ItemName="AssemblyVersion" />
+    </GetAssemblyIdentity>
+
+    <!-- Rename and move final MSI to Installs folder -->
+    <Exec Command="if not exist Installs mkdir Installs" />
+    <Exec Command="move bin\$(Configuration)\$(OutputName).msi Installs\DnaWeb-%(AssemblyVersion.Version)-$(Configuration)-$(Platform).msi" />
+  </Target>
+</Project>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WixLocalization Culture="en-us" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+
+  <!-- Product Specific Strings -->
+  <String Id="ProductName_x86">DNA Web (32-bit)</String>
+  <String Id="ProductName_x64">DNA Web (64-bit)</String>
+  <String Id="Description">An interpretation engine for static web formats</String>
+  <String Id="Comments">An interpretation engine for static web formats</String>
+  <String Id="Keywords">DNA Web</String>
+  
+  <!-- Language Code -->
+  <String Id="Language">1033</String>
+
+</WixLocalization>

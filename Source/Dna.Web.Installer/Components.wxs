@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Common includes -->
+<?include Common.wxi?>
+
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+
+  <Fragment>
+
+    <!-- Single Component Group to install -->
+    <ComponentGroup Id="ProductComponents">
+
+      <ComponentRef Id="DnaWebShortcut"/>
+      <ComponentRef Id="Path"/>
+
+    </ComponentGroup>
+    
+    <!-- Platform independent -->
+    
+    <!-- PATH environment variable for dnaweb.cmd file to work from anywhere -->
+    <DirectoryRef Id="TARGETDIR">
+      <Component Id="Path" Guid="{68048AC5-DF0A-492D-855E-E8657871A581}">
+        <Environment Id="PATH" Name="PATH" Value="[INSTALLFOLDER]" Permanent="no" Part="last" Action="set" System="no" />
+      </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="INSTALLFOLDER" FileSource="$(var.BasePath)">
+
+      <!-- dnaweb.cmd --> 
+      <Component Id="DnaWebShortcut" Guid="{39AB170A-FD38-4A64-85A5-57B211EECE9D}">
+
+        <Shortcut Id="DnaWebShortcut"
+                  Name="DnaWeb"
+                  Target="[INSTALLFOLDER]DnaWeb.exe" 
+                  Directory="InstallProgramMenuFolder"
+                  WorkingDirectory="APPLICATIONROOTDIRECTORY"
+                  Icon="icon.ico" />
+
+        <RegistryValue Id="RegDnaWebShortcut" Root="HKCU" Key="SOFTWARE\$(var.InstallFolderName)" Name="Shortcut" Type="integer" Value="1" KeyPath="yes"/>
+
+        <RemoveFolder Id="RemoveProgramMenuFolder" Directory="InstallProgramMenuFolder" On="uninstall"/>
+
+      </Component>
+
+    </DirectoryRef>
+
+  </Fragment>
+
+</Wix>
+

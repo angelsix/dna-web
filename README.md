@@ -2,6 +2,8 @@
 
 When first building your website you don’t typically work directly in ASP.Net, or PHP or other final server languages. You build your website in plain static HTML, then once done you convert them to headers, footers, cshtml files etc...
 
+[TOC]
+
 ## The issue with static HTML
 
 The issue with doing plain HTML is that is not your final format. Plain HTML cannot have shared headers and footers that are the same throughout pages. It cannot have variables, multiple outputs, multiple formats or anything else.
@@ -80,7 +82,7 @@ Another useful feature is the ability to create variables that can be inserted a
 $-->
 <html>
   <head>
-    <title>$Title$$</title>
+    <title>$$Title$$</title>
   </head>
   <body>
     <p>Get the source code <a href="$$HomeUrl$$" />here</a>.
@@ -93,6 +95,18 @@ To create variables, first start a special *code* block comment using `<!--$`and
 Inside the data element you can now create variables with names and values just like any XML/HTML element.
 
 To then use them inside your HTML, use the given name you created, wrapped inside`$$...$$`, for example `$$Title$$`
+
+## Dna Variables
+
+As well as defining variables yourself, DnaWeb has a bunch of in-built useful variables, you use in just the same way with the prefix `dna.`
+
+| Dna Variable                    | Output                     | Description                              |
+| ------------------------------- | -------------------------- | ---------------------------------------- |
+| `$$dna.Date("MMMM dd, yyyy")$$` | October 10, 2017           | The current date/time in the specified string format |
+| `$$dna.ProjectPath$$`           | D:\Some\Folder             | The current directory where the main project is (where DnaWeb has been run from) |
+| `$$dna.FilePath$$`              | D:\Some\Folder\file.dnaweb | The full path of the current file this variable resides within |
+
+If you have any requests for more variables, simply ask for them in the [GitHub Repo](https://github.com/angelsix/dna-web)
 
 ## Output Profiles
 
@@ -143,7 +157,7 @@ Here is an example that generates a full static HTML page called index.html and 
 <!--@ include footer.dnaweb:wrapped @-->`
 ```
 
-As you can see by specifying a profile named "wrapped" then setting the index.html output to use that profile, and the includes for the header and footer to only include the files for the profile "wrapped" we end up with just the header <h1\> in the .cshtml file but the complete file for the .html file.
+As you can see by specifying a profile named "wrapped" then setting the index.html output to use that profile, and the includes for the header and footer to only include the files for the profile "wrapped" we end up with just the header <h1> in the .cshtml file but the complete file for the .html file.
 
 ## Inline Data
 
@@ -257,42 +271,84 @@ The comments for the properties will come from the comments specified in the var
 
 The variables will also be wrapped in a *#region* with the same name as the group.
 
-## Using DNA Web Engine
+## Installing DnaWeb
 
-Now you have seen how to use all the features, you may ask well how do I actually use the engine.
+If you want to create your own Windows installer, download and install [Wix](http://wixtoolset.org/) and then right click on the **Dna.Web.Installer** project in Visual Studio to compile an msi file. The output of the compile will be in a folder inside **Dna.Web.Installer** called **Installs**
 
-Open up the Source folder, then the Dna.HtmlEngine.sln file. With Visual Studio open make sure Dna.HtmlEngine.CommandLine is set as the startup project. If not right click **Dna.HtmlEngine.CommandLine** and select **Set as Startup Project**.
+Alternatively download a pre-made version from http://blog.angelsix.com/docs.dnaweb/
 
-Now press F5 to run the engine. This will run the engine, opening a command line window that should output where it is listening for file changes and state **Press enter to stop**.
+Once installed on your system, DnaWeb will be a self-contained .Net Core application in your Program Files folder under DnaWeb. 
 
-By default the engine looks in the Examples folder, which is specified by the monitor path set in the dna.config file placed in the console project folder and set to Copy to Output directory. 
+This installed path will also be added to your systems **PATH** variable. This means you can run DnaWeb from anywhere in command line.
 
-Now with the engine running, edit any file in the Examples folder and the console will detect the change and automatically process the files and generate the outputs. All details are output to the console window.
+## Running DnaWeb on a Project/Folder
 
-The typical work-cycle when using DNA Web Engine is to start the engine up prior to working, then work with your dnaweb files as required, meaning any edits to those files will auto-generate your HTML/C# files instantly.
+Let's say you have a folder now containing your website, its assets, images, css, html, dnaweb files and so on. At the start of your work day, you would just navigate to that folder in Explorer, then in the address bar type `cmd` to open a command prompt in that folder.
 
-## Copy the engine to a project
+![cmd-addressbar](/Documentation/cmd-addressbar.png)
 
-Say you want to just get a compiled copy of the engine to keep in your own projects folder/source control. Right click on the **Dna.HtmlEngine.CommandLine** project and select **Publish**.
+Now simply type `dnaweb` to run the DnaWeb engine for that project.
 
-By default there is a publish profile setup. Click the **Publish** button and it should say at the bottom left of Visual Studio *Publish succeeded*.
+![dnaweb](/Documentation/dnaweb.png)
 
-Browse to the **bin\Release\PublishOutput** folder in the Dna.HtmlEngine.CommandLine folder which should now contain a runtimes folder and a bunch of dll and other files, including Dna.HtmlEngine.CommandLine.dll.
+This simply finds the self-contained **DnaWeb.exe** file located in the **Program Files** installation folder, then runs DnaWeb.
 
-This is the program folder you need to copy to wherever you want. To run the engine you need to make a shortcut that calls the following
+DnaWeb will first load the default configuration file from the install folder, and then look in the executing folder (where you ran dnaweb from command line) for a configuration file also, and load in your custom project settings. Finally it will check any command line arguments and load those. That is also the order of precedence so the arguments override the project folders configuration which overrides the default configuration. 
 
-`dotnet Dna.HtmlEngine.CommandLine.dll`
+Now just edit/create your files and DnaWeb will process them automatically. Once done press enter twice to exit DnaWeb.
 
-You can see an example of this shortcut in the root of this repository.
-
-Edit the dna.config file in the published folder to change the path which the engine listens out for your dnaweb and dnacs files. The path is the `monitor:`path and is relative to the location of the dna.config file.
-
-## Run engine on Prebuild Visual Studio
+## Run DnaWeb on Prebuild Visual Studio
 
 If you would like continuous integration, or run a build server, or simply want to make sure every time you build your Visual Studio project that any DNA web files are processed, you can run the engine as a pre-build command to Visual Studio to run every time you build your project.
 
 Change your projects pre-build command to call a .bat or .cmd batch file. Then in that batch file write:
 
-`dotnet Dna.HtmlEngine.CommandLine.dll . /a /n monitor=../DnaWeb`
+### Direct Invoke from compiled source
 
-Make sure the location of the dll file is correctly specified. The /a means process all files in the monitored folder. The /n means exit once done, and the monitor sets the path to monitor.
+`dotnet Dna.Web.CommandLine.dll . /a /c monitor=../DnaWeb`
+
+### Invoking from an installed instance
+
+`dnaweb /a /c monitor=../DnaWeb`
+
+## Compiling DNA Web Engine
+
+Open up the Source folder, then the **Dna.Web.sln** solution file. With Visual Studio open make sure **Dna.Web.CommandLine** is set as the startup project. If not right click **Dna.Web.CommandLine** and select **Set as Startup Project**.
+
+Now press F5 to run the engine. This will run the engine, opening a command line window that should output where it is listening for file changes and state **Press enter to stop**.
+
+By default the engine looks in the folder it is run in, so from Visual Studio that is the **Dna.Web.CommandLine** folder. 
+
+## Configuring DnaWeb
+
+Settings such as the monitor path, whether to generate all files on start, and whether to close right after can be set in a **dna.config** file in the same directory where you run DnaWeb from.
+
+An example dna.config file is below:
+
+```
+{
+  "monitor": ".",
+  "generateOnStart": "All",
+  "processAndClose": "False"
+}
+```
+
+| Property        | Description                              |
+| --------------- | ---------------------------------------- |
+| monitor         | A relative or absolute path to monitor, based on the folder where DnaWeb was called from |
+| generateOnStart | `None, All`. Specifies whether to generate all DnaWeb file types on startup without the need for them to be changed first |
+| processAndClose | `False, True`. Whether DnaWeb closes right after opening and optionally generating all files. Typically used in combination with **generateOnStart** being set to `All`. |
+
+These values can also be overridden when calling DnaWeb from command line by passing in command line arguments:
+
+| Argument | Description                              |
+| -------- | ---------------------------------------- |
+| monitor= | Overrides any monitor path specified in dna.config files |
+| /a       | Overrides any generate on start options specified in dna.config files and sets it to `All` |
+| /c       | Overrides any process and close options specified in dna.config files and sets it to `True` |
+
+The Visual Studio project has a debug argument set to monitor=../../Examples so that when debugging it monitors the Examples folder of the solution.
+
+Now with the engine running, edit any file in the Examples folder and the console will detect the change and automatically process the files and generate the outputs. All details are output to the console window.
+
+The typical work-cycle when using DNA Web Engine is to start the engine up prior to working, then work with your DnaWeb files as required, meaning any edits to those files will auto-generate your HTML/C# files instantly.

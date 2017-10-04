@@ -1,0 +1,15 @@
+<html>
+<head>
+<title>Dna Variables</title>
+</head>
+<body>
+    <h1>Today is $$dna.Date("MMMM dd, yyyy")$$</h1>
+    <p>The current date and time is $$dna.Date("MM/dd/yy H:mm:ss zzz")$$</p>
+
+    <h1>Project Path</h1>
+    <p>DnaWeb is currently running for $$dna.ProjectPath$$</p>
+
+    <h1>File Path</h1>
+    <p>This variable is in the file $$dna.FilePath$$</p>
+</body>
+</html>

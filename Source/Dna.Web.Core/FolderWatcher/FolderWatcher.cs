@@ -72,7 +72,8 @@ namespace Dna.Web.Core
                     mFileSystemWatcher = new FileSystemWatcher
                     {
                         Path = Path,
-                        NotifyFilter = NotifyFilters.LastWrite,
+                        // LastWrite for file content changes, FileName and DirectoryName to catch renames
+                        NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName,
                         IncludeSubdirectories = true,
                         Filter = Filter
                     };
@@ -88,6 +89,9 @@ namespace Dna.Web.Core
                 // Hook in the changed event
                 mFileSystemWatcher.Changed += FileSystemWatcher_Changed;
 
+                // Hook into renames separately
+                mFileSystemWatcher.Renamed += FileSystemWatcher_Renamed;
+
                 // Turn on raising events
                 mFileSystemWatcher.EnableRaisingEvents = true;
             }
@@ -98,14 +102,33 @@ namespace Dna.Web.Core
         #region File Watcher Events
 
         /// <summary>
+        /// Fired when a file has been renamed
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void FileSystemWatcher_Renamed(object sender, RenamedEventArgs e)
+        {
+            OnFileChanged(e.FullPath);
+        }
+
+        /// <summary>
         /// Fired when a file has been changed
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void FileSystemWatcher_Changed(object sender, FileSystemEventArgs e)
         {
+            OnFileChanged(e.FullPath);
+        }
+
+        /// <summary>
+        /// Process a file that has been changed
+        /// </summary>
+        /// <param name="fullPath">The path to the file that was changed</param>
+        private void OnFileChanged(string fullPath)
+        {
             // Store file change path
-            var path = e.FullPath;
+            var path = fullPath;
 
             // Set the last update Id to this one
             var updateId = Guid.NewGuid();

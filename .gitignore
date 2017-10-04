@@ -6,6 +6,8 @@
 *.user
 *.sln.docstates
 
+Source/Dna.Web.Installer/Installs/
+
 Examples/*.htm
 Examples/*.html
 Examples/*/*.htm

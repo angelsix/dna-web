@@ -53,15 +53,19 @@ namespace Dna.Web.CommandLine
             #region Configuration Argument Variables
 
             // Read in arguments
+            var overrides = false;
             foreach (var arg in args)
             {
-                if (arg == "/n")
+                if (arg == "/c")
                 {
                     // Don't wait (just open, process, close)
                     Configuration.ProcessAndClose = true;
 
                     // Log it
                     CoreLogger.LogTabbed("Argument Override ProcessAndClose", Configuration.ProcessAndClose.ToString(), 1);
+
+                    // Flag so we know to add newline to console log after this
+                    overrides = true;
                 }
                 else if (arg == "/a")
                 {
@@ -70,6 +74,9 @@ namespace Dna.Web.CommandLine
 
                     // Log it
                     CoreLogger.LogTabbed("Argument Override GenerateOnStart", Configuration.GenerateOnStart.ToString(), 1);
+
+                    // Flag so we know to add newline to console log after this
+                    overrides = true;
                 }
                 else if (arg.StartsWith("monitor="))
                 {
@@ -78,8 +85,15 @@ namespace Dna.Web.CommandLine
 
                     // Log it
                     CoreLogger.LogTabbed("Argument Override MonitorPath", Configuration.MonitorPath, 1);
+
+                    // Flag so we know to add newline to console log after this
+                    overrides = true;
                 }
             }
+
+            // Add newline if there are any argument overrides for console log niceness
+            if (overrides)
+                CoreLogger.Log("");
 
             #endregion
 

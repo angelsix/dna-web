@@ -37,6 +37,26 @@ namespace Dna.Web.Core
         /// </summary>
         protected string mVariableUseRegex = @"\$\$(.+?(?=\$\$))\$\$";
 
+        /// <summary>
+        /// The prefixed string in front of a variable to flag it as a special Dna variable
+        /// </summary>
+        protected string mDnaVariablePrefix = "dna.";
+
+        /// <summary>
+        /// The regex used to find a Dna Variable with it's contents wrapped inside Date("contents")
+        /// </summary>
+        protected string mDnaVariableDateRegex = @"Date\(""(.+?(?=""\)))""\)";
+
+        /// <summary>
+        /// The name of the Dna Varaible for getting the executing current directory (project path)
+        /// </summary>
+        protected string mDnaVariableProjectPath = "ProjectPath";
+
+        /// <summary>
+        /// The name of the Dna Varaible for getting the full file path of the file this variable resides inside
+        /// </summary>
+        protected string mDnaVariableFilePath = "FilePath";
+
         #endregion
 
         #region Public Properties
@@ -1023,34 +1043,157 @@ namespace Dna.Web.Core
                 if (match.Groups.Count < 2)
                     continue;
 
-                // Get include path
+                // NOTE: Group 0 = $$VariableHere$$
+                //       Group 1 = VariableHere
+
+                // Get variable without the surrounding tags $$
                 var variable = match.Groups[1].Value;
 
-                // Get the variable 
-                var variableValue = output.Variables.FirstOrDefault(v =>
-                    string.Equals(v.Name, variable, StringComparison.CurrentCultureIgnoreCase) &&
-                    string.Equals(v.ProfileName, output.ProfileName, StringComparison.CurrentCultureIgnoreCase));
-
-                // If this was a profile-specific variable, fallback to the standard variable 
-                if (variableValue == null && !string.IsNullOrEmpty(output.ProfileName))
-                    variableValue = output.Variables.FirstOrDefault(v =>
-                        string.Equals(v.Name, variable, StringComparison.CurrentCultureIgnoreCase) &&
-                        string.IsNullOrEmpty(v.ProfileName));
-
-                // Error if we don't get one
-                if (variableValue == null)
+                // Check if we have a Dna Variable
+                if (variable.StartsWith(mDnaVariablePrefix))
                 {
-                    data.Error = $"Variable not found {variable} for profile '{output.ProfileName}'";
-                    output.CompiledContents = null;
-                    return;
+                    // If it fails to process, return now (don't output)
+                    if (!ProcessDnaVariable(data, output, match, ref contents))
+                        return;
                 }
-
-                // Replace with the value
-                ReplaceTag(ref contents, match, variableValue?.Value);
+                // Otherwise...
+                else
+                {
+                    // If it fails to process, return now (don't output)
+                    if (!ProcessVariable(data, output, match, ref contents))
+                        return;
+                }
             }
 
             // Set results
             output.CompiledContents = contents;
+        }
+
+        /// <summary>
+        /// Processes the Dna variable and converts it into the resolved value
+        /// </summary>
+        /// <param name="data">The processing data</param>
+        /// <param name="output">The file output data</param>
+        /// <param name="match">The regex match that found this variable</param>
+        /// <param name="contents">The files original contents</param>
+        private bool ProcessDnaVariable(FileProcessingData data, FileOutputData output, Match match, ref string contents)
+        {
+            // Get the variable name (without the dna. prefix as well)
+            var variable = match.Groups[1].Value.Substring(mDnaVariablePrefix.Length);
+
+            // Date Time
+            var dateMatch = Regex.Match(contents, mDnaVariableDateRegex, RegexOptions.Singleline);
+            if (dateMatch.Success && dateMatch.Groups.Count >= 2)
+            {
+                // Get the string format from inside Date("")
+                var dateFormat = dateMatch.Groups[1].Value;
+
+                // Now try and replace the value, catching any unexpected errors
+                return TryProcessDnaVariable(data, output, match, ref contents, variable, () =>
+                {
+                    return DateTime.Now.ToString(dateFormat);
+                });
+            }
+            // Project Path
+            else if (string.Equals(variable, mDnaVariableProjectPath, StringComparison.InvariantCultureIgnoreCase))
+            {
+                // Now try and replace the value, catching any unexpected errors
+                return TryProcessDnaVariable(data, output, match, ref contents, variable, () =>
+                {
+                    return Environment.CurrentDirectory;
+                });
+            }
+            // File Path
+            else if (string.Equals(variable, mDnaVariableFilePath, StringComparison.InvariantCultureIgnoreCase))
+            {
+                // Now try and replace the value, catching any unexpected errors
+                return TryProcessDnaVariable(data, output, match, ref contents, variable, () =>
+                {
+                    return data.FullPath;
+                });
+            }
+            // Error if we don't get one
+            else
+            {
+                data.Error = $"Dna Variable not found {variable}";
+
+                // Clear contents as the output will be invalid now if it is not processable
+                output.CompiledContents = null;
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Tries to process a Dna Variable, catching any unexpected errors and handling them nicely
+        /// </summary>
+        /// <param name="data">The file processing data</param>
+        /// <param name="output">The file output data</param>
+        /// <param name="match">The regex match that foudn this Dna variable</param>
+        /// <param name="contents">The current file contents</param>
+        /// <param name="variable">The variable name being processed</param>
+        /// <param name="process">The action to run</param>
+        /// <returns></returns>
+        private bool TryProcessDnaVariable(FileProcessingData data, FileOutputData output, Match match, ref string contents, string variable, Func<string> process)
+        {
+            try
+            {
+                // Try and get the expected value to replace from the action
+                var result = process();
+
+                // Now replace it
+                ReplaceTag(ref contents, match, result);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                data.Error = $"Unexpected error processing Dna Variable {variable}.{Environment.NewLine}{ex.Message}";
+
+                // Clear contents as the output will be invalid now if it is not processable
+                output.CompiledContents = null;
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Processes the variable and converts it into the value of that variable
+        /// </summary>
+        /// <param name="data">The processing data</param>
+        /// <param name="output">The file output data</param>
+        /// <param name="match">The regex match that found this variable</param>
+        /// <param name="contents">The files original contents</param>
+        private bool ProcessVariable(FileProcessingData data, FileOutputData output, Match match, ref string contents)
+        {
+            // Get the variable name
+            var variable = match.Groups[1].Value;
+
+            // Resolve the name to a variable value stored in the output variables
+            var variableValue = output.Variables.FirstOrDefault(v =>
+                string.Equals(v.Name, variable, StringComparison.CurrentCultureIgnoreCase) &&
+                string.Equals(v.ProfileName, output.ProfileName, StringComparison.CurrentCultureIgnoreCase));
+
+            // If this was a profile-specific variable, fallback to the standard variable 
+            if (variableValue == null && !string.IsNullOrEmpty(output.ProfileName))
+                variableValue = output.Variables.FirstOrDefault(v =>
+                    string.Equals(v.Name, variable, StringComparison.CurrentCultureIgnoreCase) &&
+                    string.IsNullOrEmpty(v.ProfileName));
+
+            // Error if we don't get one
+            if (variableValue == null)
+            {
+                data.Error = $"Variable not found {variable} for profile '{output.ProfileName}'";
+
+                // Clear contents as the output will be invalid now if it is not processable
+                output.CompiledContents = null;
+                return false;
+            }
+
+            // Replace with the value
+            ReplaceTag(ref contents, match, variableValue?.Value);
+
+            return true;
         }
 
         /// <summary>

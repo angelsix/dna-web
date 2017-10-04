@@ -1,7 +1,8 @@
 {
   "profiles": {
     "Dna.Web.CommandLine": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": ". monitor=../../Examples"
     }
   }
 }

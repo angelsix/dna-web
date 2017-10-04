@@ -26,14 +26,14 @@
 
     <DirectoryRef Id="INSTALLFOLDER" FileSource="$(var.BasePath)">
 
-      <!-- dnaweb.cmd --> 
+      <!-- DnaWeb Shortcut --> 
       <Component Id="DnaWebShortcut" Guid="{39AB170A-FD38-4A64-85A5-57B211EECE9D}">
 
         <Shortcut Id="DnaWebShortcut"
                   Name="DnaWeb"
                   Target="[INSTALLFOLDER]DnaWeb.exe" 
                   Directory="InstallProgramMenuFolder"
-                  WorkingDirectory="APPLICATIONROOTDIRECTORY"
+                  WorkingDirectory="INSTALLFOLDER"
                   Icon="icon.ico" />
 
         <RegistryValue Id="RegDnaWebShortcut" Root="HKCU" Key="SOFTWARE\$(var.InstallFolderName)" Name="Shortcut" Type="integer" Value="1" KeyPath="yes"/>

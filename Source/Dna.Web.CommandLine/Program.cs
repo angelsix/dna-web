@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Dna.Web.CommandLine
@@ -95,6 +96,39 @@ namespace Dna.Web.CommandLine
                     // Flag so we know to add newline to console log after this
                     overrides = true;
                 }
+                else if (arg.StartsWith("logLevel="))
+                {
+                    // Try get value
+                    if (Enum.TryParse<LogLevel>(arg.Substring(arg.IndexOf("=") + 1), out LogLevel result))
+                    {
+                        // Set new value
+                        Configuration.LogLevel = result;
+
+                        // Log it
+                        CoreLogger.LogTabbed("Argument Override Log Level", Configuration.LogLevel.ToString(), 1);
+
+                        // Flag so we know to add newline to console log after this
+                        overrides = true;
+                    }
+                }
+                else if (arg.StartsWith("sassPath="))
+                {
+                    // Set path
+                    Configuration.SassOutputPath = arg.Substring(arg.IndexOf("=") + 1);
+
+                    // Resolve path
+                    var unresolvedPath = Configuration.SassOutputPath;
+
+                    if (!Path.IsPathRooted(unresolvedPath))
+                        Configuration.SassOutputPath = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, unresolvedPath));
+
+                    // Log it
+                    CoreLogger.LogTabbed("Argument Override Sass Path", Configuration.SassOutputPath, 1);
+
+                    // Flag so we know to add newline to console log after this
+                    overrides = true;
+
+                }
             }
 
             // Add newline if there are any argument overrides for console log niceness
@@ -129,6 +163,9 @@ namespace Dna.Web.CommandLine
             CoreLogger.LogTabbed("Process And Close", Configuration.ProcessAndClose.ToString(), 1, type: LogType.Information);
             CoreLogger.LogTabbed("Log Level", Configuration.LogLevel.ToString(), 1, type: LogType.Information);
             CoreLogger.LogTabbed("Sass Path", Configuration.SassOutputPath, 1, type: LogType.Information);
+            CoreLogger.Log("", type: LogType.Information);
+
+            CoreLogger.Log($"DnaWeb Version {typeof(Program).Assembly.GetName().Version}", type: LogType.Attention);
             CoreLogger.Log("", type: LogType.Information);
 
             #region Create Engines

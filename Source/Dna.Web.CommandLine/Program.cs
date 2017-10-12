@@ -47,7 +47,7 @@ namespace Dna.Web.CommandLine
             #region Read Configuration Files
 
             // Load configuration files
-            Configuration = DnaConfiguration.LoadFromFiles(new[] { DnaSettings.DefaultConfigurationFilePath, specificConfigurationFile });
+            Configuration = DnaConfiguration.LoadFromFiles(new[] { DnaSettings.DefaultConfigurationFilePath, specificConfigurationFile }, defaultConfigurationIndex: 0);
 
             #endregion
 

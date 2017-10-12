@@ -3,11 +3,25 @@
 <!-- Common includes -->
 <?include Common.wxi?>
 
+<!-- 
+    To release a new version
+    
+    1. Change the ProductCode for both 32 and 64bit to new GUIDs
+    2. Change Dna.Web.CommandLine Assembly Version to new version (x.x.x.y)
+         NOTE: Updating last digit (y) won't cause old version to be removed
+               Update one of the first 3 digits to trigger an upgrade/remove old version
+    3. Update changelog.md in Dna Web GitHub Pages site
+    4. Build each installer
+    5. Copy .msi files to Dna Web GitHub Pages Releases folder
+    6. Push changes to git
+
+-->
+
 <!-- Set a specific product code based on the processor architecture build variable -->
 <?if $(var.Platform)=x64 ?>
-<?define ProductCode = "{E23326CD-D816-48BB-BA0A-5C1FC2F40E5F}" ?>
+<?define ProductCode = "{B21BBB1D-8CF5-4E09-B246-07A975E5B728}" ?>
 <?else ?>
-<?define ProductCode = "{C9ADB44D-3433-4386-9DEE-B89E51ED200B}" ?>
+<?define ProductCode = "{4FD50CF4-2AD4-4301-881E-A6FF6CB7D4E7}" ?>
 <?endif ?>
 <?define UpgradeCode = "{452D79DF-DD6D-4904-B047-530C37367094}" ?>
 
@@ -32,8 +46,25 @@
              InstallPrivileges="elevated"
              Platform="$(var.Platform)" />
 
-    <!-- Downgrade error message -->
-    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+
+    <!-- Open change log once finished install -->
+    <Property Id="MyURL"><![CDATA[http://www.dnaweb.io/changelog]]></Property>
+    <CustomAction Id="SetOpenURL" Property="WixShellExecTarget" Value="[MyURL]" />
+    <CustomAction Id="OpenURL" BinaryKey="WixCA" DllEntry="WixShellExec" Impersonate="yes" Return="ignore" />
+
+    <!-- 
+    Installation sequence     
+    -->
+    <InstallExecuteSequence>
+
+      <!-- Launch webpage after an install install -->
+      <Custom Action="SetOpenURL" After="InstallFinalize">NOT Installed AND NOT REMOVEM</Custom>
+      <Custom Action="OpenURL" After="SetOpenURL">NOT Installed AND NOT REMOVE</Custom>
+      
+    </InstallExecuteSequence>
+
+    <!-- Remove old versions -->
+    <MajorUpgrade DowngradeErrorMessage="A later version of Dna Web is already installed. Setup will now exit." />
     
     <!-- Use default media details (.cab file) -->
     <MediaTemplate EmbedCab="yes" />

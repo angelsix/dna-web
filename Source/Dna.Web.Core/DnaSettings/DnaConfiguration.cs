@@ -80,7 +80,9 @@ namespace Dna.Web.Core
         /// combined <see cref="DnaConfiguration"/> 
         /// </summary>
         /// <param name="filePaths">A list of all paths to the configuration files</param>
-        public static DnaConfiguration LoadFromFiles(string[] filePaths, DnaConfiguration currentConfiguration = null)
+        /// <param name="currentConfiguration">The current configuration to merge the settings with</param>
+        /// <param name="defaultConfigurationIndex">If specified, it will treat the file path at the index as the default configuration, and so use the environments current directory for relative paths</param>
+        public static DnaConfiguration LoadFromFiles(string[] filePaths, DnaConfiguration currentConfiguration = null, int defaultConfigurationIndex = -1)
         {
             // Create final setting as default
             var finalSetting = new DnaConfiguration();
@@ -90,8 +92,14 @@ namespace Dna.Web.Core
                 finalSetting = JsonConvert.DeserializeObject<DnaConfiguration>(JsonConvert.SerializeObject(currentConfiguration));
 
             // For each file
-            foreach (var filePath in filePaths)
+            for (var i = 0; i < filePaths.Length; i++)
             {
+                // Get file path
+                var filePath = filePaths[i];
+
+                // Default config uses current directory as relative path source
+                var currentFolder = i == defaultConfigurationIndex ? Environment.CurrentDirectory : Path.GetDirectoryName(filePath);
+
                 // Try and load the settings
                 var settings = LoadFromFile(filePath);
 
@@ -117,7 +125,7 @@ namespace Dna.Web.Core
                     var unresolvedPath = finalSetting.MonitorPath;
                     if (!Path.IsPathRooted(unresolvedPath))
                     {
-                        finalSetting.MonitorPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(filePath), unresolvedPath));
+                        finalSetting.MonitorPath = Path.GetFullPath(Path.Combine(currentFolder, unresolvedPath));
 
                         // Log it
                         CoreLogger.LogTabbed("Monitor Resolved", finalSetting.MonitorPath, 1);
@@ -167,7 +175,7 @@ namespace Dna.Web.Core
                     var unresolvedPath = finalSetting.SassOutputPath;
                     if (!Path.IsPathRooted(unresolvedPath))
                     {
-                        finalSetting.SassOutputPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(filePath), unresolvedPath));
+                        finalSetting.SassOutputPath = Path.GetFullPath(Path.Combine(currentFolder, unresolvedPath));
 
                         // Log it
                         CoreLogger.LogTabbed("SassPath Resolved", finalSetting.SassOutputPath, 1);

@@ -51,6 +51,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <WixExtension Include="WixUtilExtension">
+      <HintPath>$(WixExtDir)\WixUtilExtension.dll</HintPath>
+      <Name>WixUtilExtension</Name>
+    </WixExtension>
     <WixExtension Include="WixUIExtension">
       <HintPath>$(WixExtDir)\WixUIExtension.dll</HintPath>
       <Name>WixUIExtension</Name>
@@ -84,7 +88,6 @@
     <GetAssemblyIdentity AssemblyFiles="..\Dna.Web.CommandLine\bin\$(Configuration)\netcoreapp2.0\win-$(Platform)\publish\DnaWeb.dll">
       <Output TaskParameter="Assemblies" ItemName="AssemblyVersion" />
     </GetAssemblyIdentity>
-
     <!-- Rename and move final MSI to Installs folder -->
     <Exec Command="if not exist Installs mkdir Installs" />
     <Exec Command="move bin\$(Configuration)\$(OutputName).msi Installs\DnaWeb-%(AssemblyVersion.Version)-$(Configuration)-$(Platform).msi" />

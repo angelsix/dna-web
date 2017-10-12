@@ -59,6 +59,33 @@ namespace Dna.Web.Core
 
         #endregion
 
+        #region Protected Properties
+
+        /// <summary>
+        /// Flag indicating if the <see cref="ProcessMainTags(FileProcessingData)"/> function will run when 
+        /// processing files in this engine
+        /// </summary>
+        public bool WillProcessMainTags { get; set; } = true;
+
+        /// <summary>
+        /// Flag indicating if the <see cref="ProcessDataTags(FileProcessingData)"/> function will run when 
+        /// processing files in this engine
+        /// </summary>
+        public bool WillProcessDataTags { get; set; } = true;
+
+        /// <summary>
+        /// Flag indicating if the <see cref="ProcessOutputTags(FileProcessingData)"/> function will run when 
+        /// processing files in this engine
+        /// </summary>
+        public bool WillProcessOutputTags { get; set; } = true;
+
+        /// <summary>
+        /// A cached list of all monitored files since the last file change
+        /// </summary>
+        public List<(string Path, List<string> References)> AllMonitoredFiles { get; set; } = new List<(string Path, List<string> References)>();
+
+        #endregion
+
         #region Public Properties
 
         /// <summary>
@@ -67,14 +94,9 @@ namespace Dna.Web.Core
         public abstract string EngineName { get; }
 
         /// <summary>
-        /// The paths to monitor for files
+        /// The configuration to use for this engine
         /// </summary>
-        public string MonitorPath { get; set; }
-
-        /// <summary>
-        /// The generate files processing option on start up
-        /// </summary>
-        public GenerateOption GenerateOnStart { get; set; } = GenerateOption.None;
+        public DnaConfiguration Configuration { get; set; }
 
         /// <summary>
         /// The desired default output extension for generated files if not overridden
@@ -92,6 +114,11 @@ namespace Dna.Web.Core
         /// Specific types: .dnaweb
         /// </summary>
         public List<string> EngineExtensions { get; set; }
+
+        /// <summary>
+        /// The unique key to lock file change processes so that only one process loop happens at once
+        /// </summary>
+        public string FileChangeLockKey => "FileChangeLock";
 
         #endregion
 
@@ -144,6 +171,15 @@ namespace Dna.Web.Core
         protected virtual Task PreProcessFile(FileProcessingData data) => Task.FromResult(0);
 
         /// <summary>
+        /// Any post-processing to do on a file after it has generated the standard output paths
+        /// Useful for specifying custom output paths when the standard Dna output tags are not used
+        /// such as in the Sass engine where the output paths can come from the Dna Config file
+        /// </summary>
+        /// <param name="data">The file processing information</param>
+        /// <returns></returns>
+        protected virtual Task PostProcessOutputPaths(FileProcessingData data) => Task.FromResult(0);
+
+        /// <summary>
         /// Any post-processing to do on a file after any other processing is done
         /// </summary>
         /// <param name="data">The file processing information</param>
@@ -178,22 +214,47 @@ namespace Dna.Web.Core
         /// The processing action to perform when the given file has been edited
         /// </summary>
         /// <param name="path">The absolute path of the file to process</param>
-        /// <param name="skipFiles">A list of absolute file paths to skip generation on, if any</param>
+        /// <param name="generatedFiles">A list of absolute file paths to already generated files in this loop, so they don't get regenerated</param>
+        /// <param name="processedFiles">A list of absolute file paths to already processed files in this loop, so they don't get reprocess</param>
+        /// <param name="referenceLoopLevel">The nth level deep in a recursive reference loop, indicates this file change has been fired because a file this file references changed, not the file itself</param>
         /// <returns></returns>
-        protected async Task<EngineProcessResult> ProcessFileAsync(string path, List<string> skipFiles = null)
+        protected async Task<EngineProcessResult> ProcessFileAsync(string path, List<string> generatedFiles, List<string> processedFiles, int referenceLoopLevel = 0)
         {
-            // Create new processing data
-            var processingData = new FileProcessingData { FullPath = path };
+            #region Setup Data
 
-            // Keep track of generated files
-            var generatedFiles = new List<string>();
+            // Prefix reference file processing with > indented to the indentation level
+            var logPrefix = (referenceLoopLevel > 0 ? $"{"".PadLeft(referenceLoopLevel * 2, ' ') }> " : "");
+
+            // Create new processing data
+            var processingData = new FileProcessingData {
+                FullPath = path,
+                LocalConfiguration = DnaConfiguration.LoadFromFiles(new[] { Path.Combine(Path.GetDirectoryName(path), DnaSettings.ConfigurationFileName) }, Configuration)
+            };
+
+            #endregion
+
+            #region Read File
 
             // Make sure the file exists
             if (!FileManager.FileExists(processingData.FullPath))
                 return new EngineProcessResult { Success = false, Path = processingData.FullPath, Error = "File no longer exists" };
 
             // Read all the file into memory (it's ok we will never have large files they are text web files)
-            processingData.UnprocessedFileContents = await FileManager.ReadAllText(processingData.FullPath);
+            processingData.UnprocessedFileContents = await FileManager.ReadAllTextAsync(processingData.FullPath);
+
+            #endregion
+
+            #region Process
+
+            // Skip processing this file if we have already processed it
+            if (processedFiles.Any(toSkip => string.Equals(toSkip, processingData.FullPath, StringComparison.CurrentCultureIgnoreCase)) == true)
+            {
+                Log($"{logPrefix}Skipping already processed file {processingData.FullPath}", type: LogType.Warning);
+                return new EngineProcessResult { Success = true, SkippedProcessing = true, Path = path };
+            }
+
+            // Log the start
+            Log($"{logPrefix}Processing file {path}...", type: LogType.Information);
 
             // Pre-processing
             await PreProcessFile(processingData);
@@ -204,28 +265,40 @@ namespace Dna.Web.Core
                 return new EngineProcessResult { Success = false, Path = path, Error = processingData.Error };
 
             // Find all outputs
-            ProcessOutputTags(processingData);
+            if (WillProcessOutputTags)
+            {
+                ProcessOutputTags(processingData);
 
-            // If it failed
-            if (!processingData.Successful)
-                // Return the failure
-                return new EngineProcessResult { Success = false, Path = path, Error = processingData.Error };
+                // If it failed
+                if (!processingData.Successful)
+                    // Return the failure
+                    return new EngineProcessResult { Success = false, Path = path, Error = processingData.Error };
+            }
+
+            // Any output path processing
+            await PostProcessOutputPaths(processingData);
 
             // Process base tags
-            ProcessMainTags(processingData);
+            if (WillProcessMainTags)
+            {
+                ProcessMainTags(processingData);
 
-            // If it failed
-            if (!processingData.Successful)
-                // Return the failure
-                return new EngineProcessResult { Success = false, Path = path, Error = processingData.Error };
+                // If it failed
+                if (!processingData.Successful)
+                    // Return the failure
+                    return new EngineProcessResult { Success = false, Path = path, Error = processingData.Error };
+            }
 
-            // Process variables and data
-            ProcessDataTags(processingData);
+            if (WillProcessDataTags)
+            {
+                // Process variables and data
+                ProcessDataTags(processingData);
 
-            // If it failed
-            if (!processingData.Successful)
-                // If any failed, return the failure
-                return new EngineProcessResult { Success = false, Path = path, Error = processingData.Error };
+                // If it failed
+                if (!processingData.Successful)
+                    // If any failed, return the failure
+                    return new EngineProcessResult { Success = false, Path = path, Error = processingData.Error };
+            }
 
             // Any post processing
             await PostProcessFile(processingData);
@@ -235,29 +308,35 @@ namespace Dna.Web.Core
                 // Return the failure
                 return new EngineProcessResult { Success = false, Path = path, Error = processingData.Error };
 
-            // All ok, generate HTML files if not a partial file
+            // Now this file is processed, add it to processed list 
+            processedFiles.Add(processingData.FullPath);
 
+            #endregion
+
+            #region Generate Outputs
+
+            // All ok, generate files if not a partial file
             if (!processingData.IsPartial)
             {
                 // Generate each output
-                processingData.OutputPaths.ForEach(async (outputPath) =>
+                foreach (var outputPath in processingData.OutputPaths)
                 {
-                    // Skip any files we want to skip
-                    if (skipFiles?.Any(toSkip => string.Equals(toSkip, outputPath.FullPath, StringComparison.CurrentCultureIgnoreCase)) == true)
-                    {
-                        Log($"Skipping already generated file {outputPath.FullPath}", type: LogType.Warning);
-                        return;
-                    }
-
                     // Any pre processing
                     await PreGenerateFile(processingData, outputPath);
+
+                    // Skip any files we want to skip
+                    if (generatedFiles?.Any(toSkip => string.Equals(toSkip, outputPath.FullPath, StringComparison.CurrentCultureIgnoreCase)) == true)
+                    {
+                        Log($"{logPrefix}Skipping already generated file {outputPath.FullPath}", type: LogType.Warning);
+                        continue;
+                    }
 
                     // Compile output (replace variables with values)
                     GenerateOutput(processingData, outputPath);
 
                     // If we failed, ignore (it will already be logged)
                     if (!processingData.Successful)
-                        return;
+                        continue;
 
                     // Any post processing
                     await PostGenerateFile(processingData, outputPath);
@@ -275,37 +354,51 @@ namespace Dna.Web.Core
                         generatedFiles.Add(outputPath.FullPath);
 
                         // Log it
-                        Log($"Generated file {outputPath.FullPath}");
+                        Log($"{logPrefix}Generated file {outputPath.FullPath}", type: LogType.Success);
                     }
                     catch (Exception ex)
                     {
                         // If any failed, return the failure
                         processingData.Error += $"{System.Environment.NewLine}Error saving generated file {outputPath.FullPath}. {ex.Message}. {System.Environment.NewLine}";
                     }
-                });
-            }
-            else
-            {
-                // If it is a partial file, search the root monitor folder for all files with the extensions
-                // and search within those for a tag that includes this partial fie
-                // 
-                // Then fire off a process event for each of them
-                Log($"Partial file edit. Updating referenced files to {path}...");
-
-                // Find all files references this path
-                var referencedFiles = await FindReferencedFilesAsync(path);
-
-                // Process any referenced files
-                foreach (var reference in referencedFiles)
-                {
-                    // Process partial
-                    var result = await ProcessFileChangedAsync(reference, skipFiles);
-
-                    // Add generated files to list
-                    if (result.GeneratedFiles?.Length > 0)
-                        generatedFiles.AddRange(result.GeneratedFiles);
                 }
             }
+            else
+                // If it is a partial file, log the fact 
+                Log($"{logPrefix}Partial file edit {path}...");
+
+            #endregion
+
+            #region Process Referencing Files
+
+            // Search the root monitor folder for all files with the extensions
+            // and search within those for a tag that includes this file
+            // 
+            // Then fire off a process event for each of them
+            Log($"{logPrefix}Updating referenced files to {path}...");
+
+            // Find all files references this file
+            var filesThatReferenceThisFile = await FindReferencedFilesAsync(path, processingData);
+
+            // If we failed, stop
+            if (!processingData.Successful)
+                // Return the failure
+                return new EngineProcessResult { Success = false, Path = path, Error = processingData.Error };
+
+            // Process any referenced files
+            foreach (var reference in filesThatReferenceThisFile)
+            {
+                // Process file that referenced partial
+                // NOTE: The generatedFiles and processedFiles are references (List's)
+                //       so the inner function will add to them the generated and processed files
+                //       no need to add them ourselves here
+                var result = await ProcessFileChangedAsync(reference, generatedFiles, processedFiles, referenceLoopLevel + 1);
+            }
+
+            #endregion
+
+            // Log the message
+            Log($"{logPrefix}Successfully processed file {path}", type: LogType.Attention);
 
             // Return result
             return new EngineProcessResult { Success = processingData.Successful, Path = path, GeneratedFiles = generatedFiles.ToArray(), Error = processingData.Error };
@@ -330,7 +423,7 @@ namespace Dna.Web.Core
         /// <summary>
         /// Starts the engine ready to handle processing of the specified files
         /// </summary>
-        public async Task StartAsync()
+        public void Start()
         {
             Log($"{EngineName} Engine Starting...", type: LogType.Information);
             Log("=======================================", type: LogType.Information);
@@ -348,7 +441,7 @@ namespace Dna.Web.Core
             Started();
 
             // Log the message
-            Log($"Listening to '{MonitorPath}'...", type: LogType.Information);
+            Log($"Listening to '{Configuration.MonitorPath}'...", type: LogType.Information);
             LogTabbed($"Delay", $"{ProcessDelay}ms", 1);
 
             // Create a new list of watchers
@@ -358,7 +451,7 @@ namespace Dna.Web.Core
             EngineExtensions.ForEach(extension => mWatchers.Add(new FolderWatcher
             {
                 Filter = "*" + extension,
-                Path = MonitorPath,
+                Path = Configuration.MonitorPath,
                 UpdateDelay = ProcessDelay
             }));
 
@@ -379,41 +472,40 @@ namespace Dna.Web.Core
             });
 
             // Closing comment tag
-            Log("");
-
-            // Now do startup generation
-            await StartupGenerationAsync();
+            Log("", type: LogType.Information);
         }
 
         /// <summary>
         /// Performs any startup generation that was specified
         /// </summary>
-        private async Task StartupGenerationAsync()
+        public async Task StartupGenerationAsync()
         {
             // If there is nothing to do, just return
-            if (GenerateOnStart == GenerateOption.None)
+            if (Configuration.GenerateOnStart == GenerateOption.None)
                 return;
 
             // Find all paths
-            var allFiles = FindAllFiles();
+            await FindAllMonitoredFilesAsync();
 
             // Keep a log of all files that have been generated already
-            // so we do not regenerate them
             var generatedFiles = new List<string>();
 
+            // Keep a log of all files that have been processed already
+            var processedFiles = new List<string>();
+
             // For each file
-            foreach (var file in allFiles)
+            foreach (var file in AllMonitoredFiles)
             {
                 // Don't process files twice
-                if (generatedFiles.Any(f => string.Equals(f, file, StringComparison.CurrentCultureIgnoreCase)))
+                if (generatedFiles.Any(f => string.Equals(f, file.Path, StringComparison.CurrentCultureIgnoreCase)))
                     continue;
 
-                // Process file
-                var result = await ProcessFileChangedAsync(file, generatedFiles);
-
-                // Add any generated file outputs to list
-                if (result.GeneratedFiles?.Length > 0)
-                    generatedFiles.AddRange(result.GeneratedFiles);
+                // Lock this from running more than one file processing at a time...
+                var result = await AsyncAwaitor.AwaitResultAsync(FileChangeLockKey, () =>
+                {
+                    // Process file
+                    return ProcessFileChangedAsync(file.Path, generatedFiles, processedFiles);
+                });
             };
         }
 
@@ -427,25 +519,38 @@ namespace Dna.Web.Core
         /// <param name="path">The path of the file that has changed</param>
         private async void Watcher_FileChangedAsync(string path)
         {
-            // Process the file
-            await ProcessFileChangedAsync(path);
+            // Update all monitored files (used in searching for references)
+            await FindAllMonitoredFilesAsync();
+
+            // Keep a list of processed and generated files
+            var generatedFiles = new List<string>();
+            var processedFiles = new List<string>();
+
+            // Lock this from running more than one file processing at a time...
+            await AsyncAwaitor.AwaitAsync(FileChangeLockKey, () =>
+            {
+                // Process the file
+                return ProcessFileChangedAsync(path, generatedFiles, processedFiles);
+            });
         }
 
         /// <summary>
         /// Called when a file has changed and needs processing
         /// </summary>
         /// <param name="path">The full path of the file to process</param>
-        /// <param name="skipFiles">A list of absolute file paths to skip generation on, if any</param>
+        /// <param name="generatedFiles">A list of absolute file paths to already generated files in this loop, so they don't get regenerated</param>
+        /// <param name="processedFiles">A list of absolute file paths to already processed files in this loop, so they don't get reprocessed</param>
+        /// <param name="referenceLoopLevel">The nth level deep in a recursive reference loop, indicates this file change has been fired because a file this file references changed, not the file itself</param>
         /// <returns></returns>
-        protected async Task<EngineProcessResult> ProcessFileChangedAsync(string path, List<string> skipFiles = null)
+        protected async Task<EngineProcessResult> ProcessFileChangedAsync(string path, List<string> generatedFiles, List<string> processedFiles, int referenceLoopLevel = 0)
         {
+            // Prefix reference file processing with >
+            var logPrefix = (referenceLoopLevel > 0 ? $"{"".PadLeft(referenceLoopLevel * 2)}> " : "");
+
             try
             {
-                // Log the start
-                Log($"Processing file {path}...", type: LogType.Information);
-
                 // Process the file
-                var result = await ProcessFileAsync(path, skipFiles);
+                var result = await ProcessFileAsync(path, generatedFiles, processedFiles, referenceLoopLevel);
 
                 // Check if we have an unknown response
                 if (result == null)
@@ -456,9 +561,6 @@ namespace Dna.Web.Core
                 {
                     // Inform listeners
                     ProcessSuccessful(result);
-
-                    // Log the message
-                    Log($"Successfully processed file {path}", type: LogType.Success);
                 }
                 // If we failed, let the listeners know
                 else
@@ -467,7 +569,7 @@ namespace Dna.Web.Core
                     ProcessFailed(result);
 
                     // Log the message
-                    Log($"Failed to processed file {path}", message: result.Error, type: LogType.Error);
+                    Log($"{logPrefix}Failed to processed file {path}", message: result.Error, type: LogType.Error);
                 }
 
                 return result;
@@ -487,7 +589,7 @@ namespace Dna.Web.Core
                 ProcessFailed(failedResult);
 
                 // Log the message
-                Log($"Unexpected fail to processed file {path}", message: ex.Message, type: LogType.Error);
+                Log($"{logPrefix}Unexpected fail to processed file {path}", message: ex.Message, type: LogType.Error);
 
                 // Return the result
                 return failedResult;
@@ -1025,7 +1127,7 @@ namespace Dna.Web.Core
         /// </summary>
         /// <param name="data">The file processing data</param>
         /// <param name="output">The output data to generate the contents for</param>
-        protected void GenerateOutput(FileProcessingData data, FileOutputData output)
+        protected virtual void GenerateOutput(FileProcessingData data, FileOutputData output)
         {
             // Create a match variable
             Match match = null;
@@ -1304,33 +1406,86 @@ namespace Dna.Web.Core
 
         /// <summary>
         /// Searches the <see cref="MonitorPath"/> for all files that match the <see cref="EngineExtensions"/> 
-        /// then searches inside them to see if they include the includePath passed in />
+        /// then searches inside them to see if they include the includePath passed in
         /// </summary>
         /// <param name="includePath">The path to look for being included in any of the files</param>
+        /// <param name="data">The file processing data</param>
+        /// <param name="existingReferences">A list of already found references to check for circular references</param>
         /// <returns></returns>
-        protected async Task<List<string>> FindReferencedFilesAsync(string includePath)
+        protected virtual async Task<List<string>> FindReferencedFilesAsync(string includePath, FileProcessingData data, List<string> existingReferences = null)
         {
+            #region Setup Data
+
             // New empty list
             var toProcess = new List<string>();
+
+            // Make existing references list if not one
+            if (existingReferences == null)
+                existingReferences = new List<string>();
+
+            // New list for any reference files found
+            var filesThatReferenceThisFile = new List<string>();
+
+            #endregion
 
             // If we have no path, return 
             if (string.IsNullOrWhiteSpace(includePath))
                 return toProcess;
 
+            #region Find Files That Reference This File
+
             // Find all files in the monitor path
-            var allFiles = FindAllFiles();
+            var allFiles = AllMonitoredFiles;
 
             // For each file, find all resolved references
             foreach (var file in allFiles)
             {
-                // Get all resolved references
-                var references = await GetResolvedIncludePathsAsync(file);
-
                 // If any match this file...
-                if (references.Any(reference => string.Equals(reference, includePath, StringComparison.CurrentCultureIgnoreCase)))
+                if (file.References.Any(reference => string.Equals(reference, includePath, StringComparison.CurrentCultureIgnoreCase)))
+                {
                     // Add this file to be processed
-                    toProcess.Add(file);
-            };
+                    toProcess.Add(file.Path);
+
+                    // Add as a parent to check
+                    filesThatReferenceThisFile.Add(file.Path);
+                }
+            }
+
+            #endregion
+
+            #region Circular Reference Check 
+
+            // Add this files own references to the list of references we have found so far as we step up the tree
+            existingReferences.AddRange(await GetResolvedIncludePathsAsync(includePath));
+
+            // Circular reference check
+            if (existingReferences.Contains(includePath))
+            {
+                data.Error = $"Circular reference detected to {includePath}";
+                return toProcess;
+            }
+
+            #endregion
+
+            #region Recursive Step-Up Loop
+
+            // Now recursively loop all parents looking for any files that reference them
+            foreach (var referencedFile in filesThatReferenceThisFile)
+            {
+                // Get all files that reference this parent
+                // NOTE: Don't pass the existing references as a reference for referenced files
+                //       Their own references are not related to each other parent reference
+                var parentReferences = await FindReferencedFilesAsync(referencedFile, data, new List<string>(existingReferences));
+
+                // Add them to the list
+                foreach (var parentReference in parentReferences)
+                {
+                    // Add this to the list
+                    toProcess.Add(parentReference);
+                }
+            }
+
+            #endregion
 
             // Return what we found
             return toProcess;
@@ -1340,16 +1495,26 @@ namespace Dna.Web.Core
         /// Finds all files in the monitor folder that match this engines extension types
         /// </summary>
         /// <returns></returns>
-        private List<string> FindAllFiles()
+        protected async Task FindAllMonitoredFilesAsync()
         {
-            // New empty list
-            var foundFiles = new List<string>();
+            // Clear previous list
+            AllMonitoredFiles.Clear();
 
-            return GetDirectoryFiles(MonitorPath, "*.*")
+            // Get all monitored files
+            var monitoredFiles = GetDirectoryFiles(Configuration.MonitorPath, "*.*")
                            .Where(file => EngineExtensions.Any(ex => Regex.IsMatch(Path.GetFileName(file), ex)))
                            .ToList();
-        }
 
+            // For each find their references
+            foreach (var file in monitoredFiles)
+            {
+                // Get all resolved references
+                var references = await GetResolvedIncludePathsAsync(file);
+
+                // Add to list
+                AllMonitoredFiles.Add((file, references));
+            }
+        }
 
         /// <summary>
         /// A safe way to get all the files in a directory and sub directory without crashing on UnauthorizedException or PathTooLongException
@@ -1385,13 +1550,12 @@ namespace Dna.Web.Core
             return foundFiles;
         }
 
-
         /// <summary>
         /// Returns a list of resolved paths for all include files in a file
         /// </summary>
         /// <param name="filePath">The full path to the file to check</param>
         /// <returns></returns>
-        protected async Task<List<string>> GetResolvedIncludePathsAsync(string filePath)
+        protected virtual async Task<List<string>> GetResolvedIncludePathsAsync(string filePath)
         {
             // New blank list
             var paths = new List<string>();
@@ -1401,7 +1565,7 @@ namespace Dna.Web.Core
                 return paths;
 
             // Read all the file into memory (it's ok we will never have large files they are text web files)
-            var fileContents = await FileManager.ReadAllText(filePath);
+            var fileContents = await FileManager.ReadAllTextAsync(filePath);
 
             // Create a match variable
             Match match = null;
@@ -1415,38 +1579,68 @@ namespace Dna.Web.Core
                     ReplaceTag(ref fileContents, match, string.Empty);
 
                 // Find all special tags that have 2 groups
-                match = Regex.Match(fileContents, mStandard2GroupRegex, RegexOptions.Singleline);
-
-                // Make sure we have enough groups
-                if (match.Groups.Count < 3)
+                if (!GetIncludeTag(filePath, fileContents, ref match, out List<string> includePaths))
                     continue;
 
-                // Make sure this is an include
-                if (!string.Equals(match.Groups[1].Value, "include"))
-                    continue;
+                // For each include path found in the match
+                includePaths.ForEach(includePath =>
+                {
+                    // Strip any profile name (we don't care about that for this)
+                    // If the name have a single : then the right half is the profile name
+                    if (includePath.Count(c => c == ':') == 1)
+                    {
+                        // Make sure this isn't from an absolute path like C:\Some...
+                        var index = includePath.IndexOf(':');
+                        if (includePath.Length <= index + 1 || !(includePath[index + 1] == '\\' || includePath[index + 1] == '/'))
+                            includePath = includePath.Split(':')[0];
+                    }
 
-                // Get include path
-                var includePath = match.Groups[2].Value;
+                    // Resolve any relative aspects of the path
+                    if (!Path.IsPathRooted(includePath))
+                        includePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(filePath), includePath));
 
-                // Strip any profile name (we don't care about that for this)
-                // If the name have a single : then the right half is the profile name
-                if (includePath.Count(c => c == ':') == 1)
-                    includePath = includePath.Split(':')[0];
+                    // Try and find the include file
+                    FindIncludeFile(filePath, includePath, out string resolvedPath, returnContents: false);
 
-                // Resolve any relative aspects of the path
-                if (!Path.IsPathRooted(includePath))
-                    includePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(filePath), includePath));
-
-                // Try and find the include file
-                FindIncludeFile(filePath, includePath, out string resolvedPath, returnContents: false);
-
-                // Add the resolved path if we got one
-                if (!string.IsNullOrEmpty(resolvedPath))
-                    paths.Add(resolvedPath);
+                    // Add the resolved path if we got one
+                    if (!string.IsNullOrEmpty(resolvedPath))
+                        paths.Add(resolvedPath);
+                });
             }
 
             // Return the results
             return paths;
+        }
+
+        /// <summary>
+        /// Searches the fileContents for an include statement and returns its 
+        /// </summary>
+        /// <param name="fileContents">The path of the file to look in</param>
+        /// <param name="fileContents">The file contents to search</param>
+        /// <param name="match">The match used that found the include (must be provided in order to remove the found include statement from the file contents)</param>
+        /// <param name="includePaths">The include path(s) found</param>
+        /// <returns></returns>
+        protected virtual bool GetIncludeTag(string filePath, string fileContents, ref Match match, out List<string> includePaths)
+        {
+            // Blank list start with
+            includePaths = new List<string>();
+
+            // Try and find match
+            match = Regex.Match(fileContents, mStandard2GroupRegex, RegexOptions.Singleline);
+
+            // Make sure we have enough groups
+            if (match.Groups.Count < 3)
+                return false;
+
+            // Make sure this is an include
+            if (!string.Equals(match.Groups[1].Value, "include"))
+                return false;
+
+            // Get include path value
+            includePaths.Add(match.Groups[2].Value);
+
+            // Return successful
+            return true;
         }
 
         #endregion

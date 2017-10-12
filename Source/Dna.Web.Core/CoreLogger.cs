@@ -9,6 +9,24 @@ namespace Dna.Web.Core
     /// </summary>
     public static class CoreLogger
     {
+        #region Private Members
+
+        /// <summary>
+        /// Object to lock Log writes
+        /// </summary>
+        private static object LogLock = new object();
+
+        #endregion
+
+        #region Public Properties
+
+        /// <summary>
+        /// The log level for output
+        /// </summary>
+        public static LogLevel LogLevel { get; set; } = LogLevel.All;
+
+        #endregion
+
         #region Public Methods
 
         /// <summary>
@@ -25,7 +43,7 @@ namespace Dna.Web.Core
                 Message = message,
                 Time = DateTime.UtcNow,
                 Type = type
-            });
+            }, LogLevel);
         }
 
         /// <summary>
@@ -50,45 +68,61 @@ namespace Dna.Web.Core
         /// Logs a message to the console
         /// </summary>
         /// <param name="message">The message to log</param>
-        public static void Write(this LogMessage message)
+        /// <param name="logLevel">The current log level setting</param>
+        public static void Write(this LogMessage message, LogLevel logLevel)
         {
-            // Set color
-            switch (message.Type)
+            lock (LogLock)
             {
-                case LogType.Diagnostic:
-                    Console.ForegroundColor = ConsoleColor.DarkGray;
-                    break;
+                // If the log level is less than the log type...
+                if ((int)logLevel < (int)message.Type)
+                    // Don't log
+                    return;
 
-                case LogType.Error:
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    break;
+                // Set color
+                switch (message.Type)
+                {
+                    case LogType.Diagnostic:
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
+                        break;
 
-                case LogType.Information:
-                    Console.ForegroundColor = ConsoleColor.White;
-                    break;
+                    case LogType.Error:
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        break;
 
-                case LogType.Success:
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    break;
+                    case LogType.Information:
+                        Console.ForegroundColor = ConsoleColor.White;
+                        break;
 
-                case LogType.Warning:
-                    Console.ForegroundColor = ConsoleColor.DarkYellow;
-                    break;
+                    case LogType.Attention:
+                        Console.ForegroundColor = ConsoleColor.Blue;
+                        break;
 
-                default:
-                    Console.ResetColor();
-                    break;
+                    case LogType.Success:
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        break;
+
+                    case LogType.Warning:
+                        Console.ForegroundColor = ConsoleColor.DarkYellow;
+                        break;
+
+                    default:
+                        Console.ResetColor();
+                        break;
+                }
+
+                // Get current time
+                var time = DateTime.Now.ToLongTimeString();
+
+                // Output title
+                Console.WriteLine($"[{time}] {message.Title}");
+
+                // Output detailed message if we have one
+                if (!string.IsNullOrEmpty(message.Message))
+                    Console.WriteLine(message.Message);
+
+                // Clear color
+                Console.ResetColor();
             }
-
-            // Output title
-            Console.WriteLine(message.Title);
-
-            // Output detailed message if we have one
-            if (!string.IsNullOrEmpty(message.Message))
-                Console.WriteLine(message.Message);
-
-            // Clear color
-            Console.ResetColor();
         }
 
         #endregion

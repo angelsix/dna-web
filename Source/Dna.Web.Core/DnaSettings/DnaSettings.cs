@@ -38,5 +38,15 @@ namespace Dna.Web.Core
         /// The name of the configuration setting for the Process And Close
         /// </summary>
         public const string ConfigurationNameProcessAndClose = "processAndClose";
+
+        /// <summary>
+        /// The name of the configuration setting for the Log Level
+        /// </summary>
+        public const string ConfigurationNameLogLevel = "logLevel";
+
+        /// <summary>
+        /// The name of the configuration setting for the Sass Output Path
+        /// </summary>
+        public const string ConfigurationNameSassOutputPath = "sassPath";
     }
 }

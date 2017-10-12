@@ -38,5 +38,10 @@ namespace Dna.Web.Core
         /// The files full contents, that get's edit during the course of being edit
         /// </summary>
         public string UnprocessedFileContents { get; set; }
+
+        /// <summary>
+        /// The configuration settings local to this files folder, if any
+        /// </summary>
+        public DnaConfiguration LocalConfiguration { get; set; }
     }
 }

@@ -37,7 +37,7 @@ namespace Dna.Web.Core
         /// </summary>
         /// <param name="path">The full path to the file</param>
         /// <returns></returns>
-        public static async Task<string> ReadAllText(string path)
+        public static async Task<string> ReadAllTextAsync(string path)
         {
             var i = 3;
 

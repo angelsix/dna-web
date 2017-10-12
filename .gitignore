@@ -19,6 +19,9 @@ Examples/*.cs
 Examples/*/*.cs
 Examples/*/*/*.cs
 
+Examples/*.css
+Examples/*/*.css
+Examples/*/*/*.css
 
 project.lock.json
 

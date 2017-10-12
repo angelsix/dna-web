@@ -253,9 +253,6 @@ namespace Dna.Web.Core
                 return new EngineProcessResult { Success = true, SkippedProcessing = true, Path = path };
             }
 
-            // Log the start
-            Log($"{logPrefix}Processing file {path}...", type: LogType.Information);
-
             // Pre-processing
             await PreProcessFile(processingData);
 
@@ -263,6 +260,20 @@ namespace Dna.Web.Core
             if (!processingData.Successful)
                 // Return the failure
                 return new EngineProcessResult { Success = false, Path = path, Error = processingData.Error };
+
+            // If it skipped
+            if (processingData.Skip)
+            {
+                // Log reason
+                Log($"{logPrefix}Skipping file {path}...", type: LogType.Warning);
+                Log($"{logPrefix}{processingData.SkipMessage}", type: LogType.Warning);
+
+                // Return the failure
+                return new EngineProcessResult { Success = true, Path = path };
+            }
+
+            // Log the start
+            Log($"{logPrefix}Processing file {path}...", type: LogType.Information);
 
             // Find all outputs
             if (WillProcessOutputTags)
@@ -273,6 +284,17 @@ namespace Dna.Web.Core
                 if (!processingData.Successful)
                     // Return the failure
                     return new EngineProcessResult { Success = false, Path = path, Error = processingData.Error };
+
+                // If it skipped
+                if (processingData.Skip)
+                {
+                    // Log reason
+                    Log($"{logPrefix}Skipping file {path}...", type: LogType.Warning);
+                    Log($"{logPrefix}{processingData.SkipMessage}", type: LogType.Warning);
+
+                    // Return the failure
+                    return new EngineProcessResult { Success = true, Path = path };
+                }
             }
 
             // Any output path processing
@@ -287,6 +309,17 @@ namespace Dna.Web.Core
                 if (!processingData.Successful)
                     // Return the failure
                     return new EngineProcessResult { Success = false, Path = path, Error = processingData.Error };
+
+                // If it skipped
+                if (processingData.Skip)
+                {
+                    // Log reason
+                    Log($"{logPrefix}Skipping file {path}...", type: LogType.Warning);
+                    Log($"{logPrefix}{processingData.SkipMessage}", type: LogType.Warning);
+
+                    // Return the failure
+                    return new EngineProcessResult { Success = true, Path = path };
+                }
             }
 
             if (WillProcessDataTags)
@@ -298,6 +331,17 @@ namespace Dna.Web.Core
                 if (!processingData.Successful)
                     // If any failed, return the failure
                     return new EngineProcessResult { Success = false, Path = path, Error = processingData.Error };
+
+                // If it skipped
+                if (processingData.Skip)
+                {
+                    // Log reason
+                    Log($"{logPrefix}Skipping file {path}...", type: LogType.Warning);
+                    Log($"{logPrefix}{processingData.SkipMessage}", type: LogType.Warning);
+
+                    // Return the failure
+                    return new EngineProcessResult { Success = true, Path = path };
+                }
             }
 
             // Any post processing
@@ -307,6 +351,17 @@ namespace Dna.Web.Core
             if (!processingData.Successful)
                 // Return the failure
                 return new EngineProcessResult { Success = false, Path = path, Error = processingData.Error };
+
+            // If it skipped
+            if (processingData.Skip)
+            {
+                // Log reason
+                Log($"{logPrefix}Skipping file {path}...", type: LogType.Warning);
+                Log($"{logPrefix}{processingData.SkipMessage}", type: LogType.Warning);
+
+                // Return the failure
+                return new EngineProcessResult { Success = true, Path = path };
+            }
 
             // Now this file is processed, add it to processed list 
             processedFiles.Add(processingData.FullPath);
@@ -337,6 +392,17 @@ namespace Dna.Web.Core
                     // If we failed, ignore (it will already be logged)
                     if (!processingData.Successful)
                         continue;
+
+                    // If it skipped
+                    if (processingData.Skip)
+                    {
+                        // Log reason
+                        Log($"{logPrefix}Skipping file {path}...", type: LogType.Warning);
+                        Log($"{logPrefix}{processingData.SkipMessage}", type: LogType.Warning);
+
+                        // Return the failure
+                        continue;
+                    }
 
                     // Any post processing
                     await PostGenerateFile(processingData, outputPath);
@@ -384,6 +450,17 @@ namespace Dna.Web.Core
             if (!processingData.Successful)
                 // Return the failure
                 return new EngineProcessResult { Success = false, Path = path, Error = processingData.Error };
+
+            // If it skipped
+            if (processingData.Skip)
+            {
+                // Log reason
+                Log($"{logPrefix}Skipping file {path}...", type: LogType.Warning);
+                Log($"{logPrefix}{processingData.SkipMessage}", type: LogType.Warning);
+
+                // Return the failure
+                return new EngineProcessResult { Success = true, Path = path };
+            }
 
             // Process any referenced files
             foreach (var reference in filesThatReferenceThisFile)

@@ -70,6 +70,10 @@ namespace Dna.Web.Core
                 // Set this file to partial if it starts with _
                 // As per the Sass rule 
                 data.IsPartial = Path.GetFileName(data.FullPath).StartsWith("_");
+
+                // Ignore .sass-cache folder
+                if (data.FullPath.Replace("\\", "/").Contains("/.sass-cache/"))
+                    data.SkipMessage = "Ignoring .sass-cache folder";
             });
         }
 

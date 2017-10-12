@@ -8,12 +8,7 @@
         /// <summary>
         /// A successfull message
         /// </summary>
-        Success = 0,
-
-        /// <summary>
-        /// A warning message
-        /// </summary>
-        Warning = 1,
+        Success = 1,
 
         /// <summary>
         /// An error message
@@ -26,8 +21,18 @@
         Information = 3,
 
         /// <summary>
+        /// A warning message
+        /// </summary>
+        Attention = 4,
+
+        /// <summary>
+        /// A warning message
+        /// </summary>
+        Warning = 5,
+
+        /// <summary>
         /// A verbose diagnostic level message
         /// </summary>
-        Diagnostic = 4,
+        Diagnostic = 6,
     }
 }

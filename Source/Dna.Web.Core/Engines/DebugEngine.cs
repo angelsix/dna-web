@@ -15,7 +15,11 @@ namespace Dna.Web.Core
         public DebugEngine()
         {
             // Listen out for all events and write them
-            LogMessage += (message) => message.Write();
+            LogMessage += (message) =>
+            {
+                // Log message
+                message.Write(Configuration.LogLevel ?? LogLevel.All);
+            };
         }
 
         #endregion

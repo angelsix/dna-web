@@ -83,6 +83,12 @@ namespace Dna.Web.CommandLine
                     // Set monitor path
                     Configuration.MonitorPath = arg.Substring(arg.IndexOf("=") + 1);
 
+                    // Resolve monitor path
+                    var unresolvedPath = Configuration.MonitorPath;
+
+                    if (!Path.IsPathRooted(unresolvedPath))
+                        Configuration.MonitorPath = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, unresolvedPath));
+
                     // Log it
                     CoreLogger.LogTabbed("Argument Override MonitorPath", Configuration.MonitorPath, 1);
 
@@ -97,39 +103,56 @@ namespace Dna.Web.CommandLine
 
             #endregion
 
-            // Resolve monitor path
-            var unresolvedPath = Configuration.MonitorPath;
+            #region Load Local Configuration Loop
 
-            if (!Path.IsPathRooted(unresolvedPath))
-                Configuration.MonitorPath = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, unresolvedPath));
+            // Last loaded monitor path
+            string lastMonitorPath;
+
+            // Load the configuration in the monitor path
+            do
+            {
+                lastMonitorPath = Configuration.MonitorPath;
+
+                // Load configuration file from monitor directory
+                Configuration = DnaConfiguration.LoadFromFiles(new[] { Path.Combine(Configuration.MonitorPath, DnaSettings.ConfigurationFileName) }, Configuration);
+            }
+            // Looping until it no longer changes
+            while (!string.Equals(lastMonitorPath, Configuration.MonitorPath, StringComparison.InvariantCultureIgnoreCase));
+
+            #endregion
 
             // Log final configuration
             CoreLogger.Log("Final Configuration", type: LogType.Information);
             CoreLogger.Log("-------------------", type: LogType.Information);
-            CoreLogger.LogTabbed("Monitor", unresolvedPath, 1, type: LogType.Information);
-            CoreLogger.LogTabbed("Monitor Resolved", Configuration.MonitorPath, 1, type: LogType.Information);
+            CoreLogger.LogTabbed("Monitor", Configuration.MonitorPath, 1, type: LogType.Information);
             CoreLogger.LogTabbed("Generate On Start", Configuration.GenerateOnStart.ToString(), 1, type: LogType.Information);
             CoreLogger.LogTabbed("Process And Close", Configuration.ProcessAndClose.ToString(), 1, type: LogType.Information);
-            CoreLogger.Log("");
+            CoreLogger.LogTabbed("Log Level", Configuration.LogLevel.ToString(), 1, type: LogType.Information);
+            CoreLogger.LogTabbed("Sass Path", Configuration.SassOutputPath, 1, type: LogType.Information);
+            CoreLogger.Log("", type: LogType.Information);
 
             #region Create Engines
 
             // Create engines
-            var engines = new List<BaseEngine> { new DnaHtmlEngine(), new DnaCSharpEngine() };
+            var engines = new List<BaseEngine> { new DnaHtmlEngine(), new DnaCSharpEngine(), new DnaSassEngine() };
 
             // Configure them
             engines.ForEach(engine =>
             {
-                // Set monitor path
-                engine.MonitorPath = Configuration.MonitorPath;
-
-                // Whether to generate all files on start
-                engine.GenerateOnStart = Configuration.GenerateOnStart ?? GenerateOption.None;
+                // Set configuration
+                engine.Configuration = Configuration;
             });
 
             // Spin them up
             foreach (var engine in engines)
-                await engine.StartAsync();
+                engine.Start();
+
+            // Set the core logger log level to match settings now
+            CoreLogger.LogLevel = Configuration.LogLevel ?? LogLevel.All;
+
+            // Now do startup generation
+            foreach (var engine in engines)
+                await engine.StartupGenerationAsync();
 
             #endregion
 

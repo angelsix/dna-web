@@ -221,7 +221,6 @@ namespace Dna.Web.Core
             output.FileContents = output.FileContents.Insert(match.Index, result);
         }
 
-
         /// <summary>
         /// Generates a C# variable setter for the given type
         /// For example, a string type and a value test would
@@ -264,10 +263,10 @@ namespace Dna.Web.Core
                 lines[0] = lines[0]?.Trim();
             else
             {
-
                 // Ignore empty lines if this is the last line
                 if (lines.Count > 1 && string.IsNullOrWhiteSpace(lines[lines.Count - 1]))
                     lines = lines.Take(lines.Count - 1).ToList();
+
                 // Ignore empty lines if this is the first line
                 if (lines.Count > 1 && string.IsNullOrWhiteSpace(lines[0]))
                     lines = lines.Skip(1).Take(lines.Count - 1).ToList();

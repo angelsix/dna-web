@@ -29,6 +29,18 @@ namespace Dna.Web.Core
         [JsonProperty(PropertyName = DnaSettings.ConfigurationNameProcessAndClose)]
         public bool? ProcessAndClose { get; set; } = false;
 
+        /// <summary>
+        /// The level of detail to log out
+        /// </summary>
+        [JsonProperty(PropertyName = DnaSettings.ConfigurationNameLogLevel)]
+        public LogLevel? LogLevel { get; set; } = Core.LogLevel.Informative;
+
+        /// <summary>
+        /// The output path of css output files based on the location of the configuration file
+        /// </summary>
+        [JsonProperty(PropertyName = DnaSettings.ConfigurationNameSassOutputPath)]
+        public string SassOutputPath { get; set; } = "";
+
         #endregion
 
         #region Public Static Helpers
@@ -44,9 +56,6 @@ namespace Dna.Web.Core
                 // Make sure file exists
                 if (!File.Exists(filePath))
                 {
-                    // Log error
-                    CoreLogger.Log($"Config File Not Found: {filePath}");
-
                     // Return nothing
                     return null;
                 }
@@ -71,10 +80,14 @@ namespace Dna.Web.Core
         /// combined <see cref="DnaConfiguration"/> 
         /// </summary>
         /// <param name="filePaths">A list of all paths to the configuration files</param>
-        public static DnaConfiguration LoadFromFiles(string[] filePaths)
+        public static DnaConfiguration LoadFromFiles(string[] filePaths, DnaConfiguration currentConfiguration = null)
         {
             // Create final setting as default
             var finalSetting = new DnaConfiguration();
+
+            // Copy current settings if they exist
+            if (currentConfiguration != null)
+                finalSetting = JsonConvert.DeserializeObject<DnaConfiguration>(JsonConvert.SerializeObject(currentConfiguration));
 
             // For each file
             foreach (var filePath in filePaths)
@@ -99,6 +112,16 @@ namespace Dna.Web.Core
 
                     // Log it
                     CoreLogger.LogTabbed("Monitor", finalSetting.MonitorPath, 1);
+
+                    // Resolve path
+                    var unresolvedPath = finalSetting.MonitorPath;
+                    if (!Path.IsPathRooted(unresolvedPath))
+                    {
+                        finalSetting.MonitorPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(filePath), unresolvedPath));
+
+                        // Log it
+                        CoreLogger.LogTabbed("Monitor Resolved", finalSetting.MonitorPath, 1);
+                    }
                 }
 
                 // Generate On Start
@@ -119,6 +142,36 @@ namespace Dna.Web.Core
 
                     // Log it
                     CoreLogger.LogTabbed("ProcessAndClose", finalSetting.ProcessAndClose.ToString(), 1);
+                }
+
+                // Log Level
+                if (settings.LogLevel.HasValue)
+                {
+                    // Set value
+                    finalSetting.LogLevel = settings.LogLevel;
+
+                    // Log it
+                    CoreLogger.LogTabbed("LogLevel", finalSetting.LogLevel.ToString(), 1);
+                }
+
+                // Sass Output Path
+                if (!string.IsNullOrEmpty(settings.SassOutputPath))
+                {
+                    // Set value
+                    finalSetting.SassOutputPath = settings.SassOutputPath;
+
+                    // Log it
+                    CoreLogger.LogTabbed("SassPath", finalSetting.SassOutputPath, 1);
+
+                    // Resolve path
+                    var unresolvedPath = finalSetting.SassOutputPath;
+                    if (!Path.IsPathRooted(unresolvedPath))
+                    {
+                        finalSetting.SassOutputPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(filePath), unresolvedPath));
+
+                        // Log it
+                        CoreLogger.LogTabbed("SassPath Resolved", finalSetting.SassOutputPath, 1);
+                    }
                 }
 
                 // Space between each configuration details for console log niceness

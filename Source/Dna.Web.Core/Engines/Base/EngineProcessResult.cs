@@ -24,5 +24,10 @@
         /// If the process failed, the error message
         /// </summary>
         public string Error { get; set; }
+
+        /// <summary>
+        /// True if the processing of the file was skipped
+        /// </summary>
+        public bool SkippedProcessing { get; set; }
     }
 }

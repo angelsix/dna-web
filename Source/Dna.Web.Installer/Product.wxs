@@ -10,18 +10,20 @@
     2. Change Dna.Web.CommandLine Assembly Version to new version (x.x.x.y)
          NOTE: Updating last digit (y) won't cause old version to be removed
                Update one of the first 3 digits to trigger an upgrade/remove old version
-    3. Update changelog.md in Dna Web GitHub Pages site
-    4. Build each installer
-    5. Copy .msi files to Dna Web GitHub Pages Releases folder
-    6. Push changes to git
+    3. Update index.md in Dna Web GitHub Pages site to point to latest download
+    4. Update previous.md in Dna Web GitHub Pages site to point to older download
+    5. Update changelog.md in Dna Web GitHub Pages site
+    6. Build each installer (change configuration to Release)
+    7. Copy .msi files to Dna Web GitHub Pages Releases folder
+    8. Push changes to git
 
 -->
 
 <!-- Set a specific product code based on the processor architecture build variable -->
 <?if $(var.Platform)=x64 ?>
-<?define ProductCode = "{B21BBB1D-8CF5-4E09-B246-07A975E5B728}" ?>
+<?define ProductCode = "{863EFAE0-1760-4832-9FE9-1DB0DC41F20F}" ?>
 <?else ?>
-<?define ProductCode = "{4FD50CF4-2AD4-4301-881E-A6FF6CB7D4E7}" ?>
+<?define ProductCode = "{B42FB3D3-03B8-4827-BEDD-E922241A3FCE}" ?>
 <?endif ?>
 <?define UpgradeCode = "{452D79DF-DD6D-4904-B047-530C37367094}" ?>
 

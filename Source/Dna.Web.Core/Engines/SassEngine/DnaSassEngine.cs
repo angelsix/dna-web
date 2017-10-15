@@ -193,7 +193,12 @@ namespace Dna.Web.Core
             // Get the area between @import and ; for example
             // @import "a";          "a"
             // @import "a", "b";     "a", "b"
-            var innerImport = match.Groups[1].Value;
+            var innerImport = match.Groups[1].Value.Trim();
+
+            // Make sure it starts and ends with a " or ' to ignore things like CSS @import url()...
+            var normalizedInnerImport = innerImport.Replace("'", "\"");
+            if (!(normalizedInnerImport.StartsWith("\"") && normalizedInnerImport.EndsWith("\"")))
+                return false;
 
             // Now get the values between the comma's and quotes
             var innerMatches = Regex.Matches(innerImport, mSassImportSplitRegex, RegexOptions.Singleline);

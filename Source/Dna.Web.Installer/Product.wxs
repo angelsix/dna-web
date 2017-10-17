@@ -21,9 +21,9 @@
 
 <!-- Set a specific product code based on the processor architecture build variable -->
 <?if $(var.Platform)=x64 ?>
-<?define ProductCode = "{863EFAE0-1760-4832-9FE9-1DB0DC41F20F}" ?>
+<?define ProductCode = "{A7467446-8FEB-42F3-8E15-D2CE001677BD}" ?>
 <?else ?>
-<?define ProductCode = "{B42FB3D3-03B8-4827-BEDD-E922241A3FCE}" ?>
+<?define ProductCode = "{C5F60972-0894-4F7F-82AE-12AF199B3F8B}" ?>
 <?endif ?>
 <?define UpgradeCode = "{452D79DF-DD6D-4904-B047-530C37367094}" ?>
 

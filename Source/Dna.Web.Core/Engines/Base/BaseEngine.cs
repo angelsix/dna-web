@@ -23,7 +23,7 @@ namespace Dna.Web.Core
 
         /// <summary>
         /// The regex to match special tags containing up to 2 values
-        /// For example: <!--@ include header @--> to include the file header._dnaweb or header.dnaweb if found
+        /// For example: <!--@ include header @--> to include the file header._dhtml or header.dhtml if found
         /// </summary>
         protected string mStandard2GroupRegex = @"<!--@\s*(\w+)\s*(.*?)\s*@-->";
 
@@ -111,7 +111,7 @@ namespace Dna.Web.Core
         /// <summary>
         /// The filename extensions to monitor for
         /// All files: .*
-        /// Specific types: .dnaweb
+        /// Specific types: .dhtml
         /// </summary>
         public List<string> EngineExtensions { get; set; }
 

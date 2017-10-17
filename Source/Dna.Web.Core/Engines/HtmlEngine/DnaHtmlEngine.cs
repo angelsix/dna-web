@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace Dna.Web.Core
 {
@@ -25,12 +27,21 @@ namespace Dna.Web.Core
         public DnaHtmlEngine()
         {
             // Set input extensions
-            EngineExtensions = new List<string> { ".dnaweb", "._dnaweb" };
+            EngineExtensions = new List<string> { ".dhtml" };
 
             // Set output extension
             OutputExtension = ".html";
         }
 
         #endregion
+
+        protected override Task PreProcessFile(FileProcessingData data)
+        {
+            return Task.Run(() =>
+            {
+                // Set this file to partial if it starts with _
+                data.IsPartial = Path.GetFileName(data.FullPath).StartsWith("_");
+            });
+        }
     }
 }

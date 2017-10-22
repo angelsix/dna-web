@@ -1,5 +1,5 @@
-<!--@ output index.html @-->
-<!--@ output extra.html @-->
-<!--@ include header.dhtml @-->
+<!--@ output index @-->
+<!--@ output extra @-->
+<!--@ include header @-->
     <h1>Header</h1>
-<!--@ include footer.dhtml @-->
+<!--@ include footer @-->

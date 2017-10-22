@@ -1,6 +1,6 @@
-<!--@ output index.htm @-->
-<!--@ output index-server.htm:server @-->
-<!--@ output index-server2.htm:server2 @-->
+<!--@ output index @-->
+<!--@ output index-server:server @-->
+<!--@ output index-server2:server2 @-->
 <!--$
 <Data>
     <Variable Name="Title">My title</Variable>

@@ -1,4 +1,4 @@
-<!--@ output index.html @-->
-<!--@ include header.dhtml @-->
+<!--@ output index @-->
+<!--@ include header @-->
     <h1>Header</h1>
-<!--@ include footer.dhtml @-->
+<!--@ include footer @-->

@@ -47,7 +47,7 @@ namespace Dna.Web.CommandLine
             #region Read Configuration Files
 
             // Load configuration files
-            Configuration = DnaConfiguration.LoadFromFiles(new[] { DnaSettings.DefaultConfigurationFilePath, specificConfigurationFile }, defaultConfigurationIndex: 0);
+            Configuration = DnaConfiguration.LoadFromFiles(new[] { DnaSettings.DefaultConfigurationFilePath, specificConfigurationFile }, null, defaultConfigurationIndex: 0);
 
             #endregion
 
@@ -57,6 +57,7 @@ namespace Dna.Web.CommandLine
             var overrides = false;
             foreach (var arg in args)
             {
+                // Process and Close
                 if (arg == "/c")
                 {
                     // Don't wait (just open, process, close)
@@ -68,6 +69,7 @@ namespace Dna.Web.CommandLine
                     // Flag so we know to add newline to console log after this
                     overrides = true;
                 }
+                // Generate All
                 else if (arg == "/a")
                 {
                     // Generate all files on start
@@ -79,6 +81,7 @@ namespace Dna.Web.CommandLine
                     // Flag so we know to add newline to console log after this
                     overrides = true;
                 }
+                // Monitor Path
                 else if (arg.StartsWith("monitor="))
                 {
                     // Set monitor path
@@ -96,6 +99,7 @@ namespace Dna.Web.CommandLine
                     // Flag so we know to add newline to console log after this
                     overrides = true;
                 }
+                // Log Level
                 else if (arg.StartsWith("logLevel="))
                 {
                     // Try get value
@@ -111,23 +115,23 @@ namespace Dna.Web.CommandLine
                         overrides = true;
                     }
                 }
-                else if (arg.StartsWith("sassPath="))
+                // Html Path
+                else if (arg.StartsWith("outputPath="))
                 {
                     // Set path
-                    Configuration.SassOutputPath = arg.Substring(arg.IndexOf("=") + 1);
+                    Configuration.OutputPath = arg.Substring(arg.IndexOf("=") + 1);
 
                     // Resolve path
-                    var unresolvedPath = Configuration.SassOutputPath;
+                    var unresolvedPath = Configuration.OutputPath;
 
                     if (!Path.IsPathRooted(unresolvedPath))
-                        Configuration.SassOutputPath = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, unresolvedPath));
+                        Configuration.OutputPath = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, unresolvedPath));
 
                     // Log it
-                    CoreLogger.LogTabbed("Argument Override Sass Path", Configuration.SassOutputPath, 1);
+                    CoreLogger.LogTabbed("Argument Override Output Path", Configuration.OutputPath, 1);
 
                     // Flag so we know to add newline to console log after this
                     overrides = true;
-
                 }
             }
 
@@ -148,7 +152,7 @@ namespace Dna.Web.CommandLine
                 lastMonitorPath = Configuration.MonitorPath;
 
                 // Load configuration file from monitor directory
-                Configuration = DnaConfiguration.LoadFromFiles(new[] { Path.Combine(Configuration.MonitorPath, DnaSettings.ConfigurationFileName) }, Configuration);
+                Configuration = DnaConfiguration.LoadFromFiles(new[] { Path.Combine(Configuration.MonitorPath, DnaSettings.ConfigurationFileName) }, null, Configuration);
             }
             // Looping until it no longer changes
             while (!string.Equals(lastMonitorPath, Configuration.MonitorPath, StringComparison.InvariantCultureIgnoreCase));
@@ -156,14 +160,7 @@ namespace Dna.Web.CommandLine
             #endregion
 
             // Log final configuration
-            CoreLogger.Log("Final Configuration", type: LogType.Information);
-            CoreLogger.Log("-------------------", type: LogType.Information);
-            CoreLogger.LogTabbed("Monitor", Configuration.MonitorPath, 1, type: LogType.Information);
-            CoreLogger.LogTabbed("Generate On Start", Configuration.GenerateOnStart.ToString(), 1, type: LogType.Information);
-            CoreLogger.LogTabbed("Process And Close", Configuration.ProcessAndClose.ToString(), 1, type: LogType.Information);
-            CoreLogger.LogTabbed("Log Level", Configuration.LogLevel.ToString(), 1, type: LogType.Information);
-            CoreLogger.LogTabbed("Sass Path", Configuration.SassOutputPath, 1, type: LogType.Information);
-            CoreLogger.Log("", type: LogType.Information);
+            Configuration.LogFinalConfiguration();
 
             CoreLogger.Log($"DnaWeb Version {typeof(Program).Assembly.GetName().Version}", type: LogType.Attention);
             CoreLogger.Log("", type: LogType.Information);
@@ -196,9 +193,21 @@ namespace Dna.Web.CommandLine
             // If we should wait, then wait
             if (Configuration.ProcessAndClose == false)
             {
-                // Wait for user to stop it
-                Console.WriteLine("Press enter to stop");
-                Console.ReadLine();
+                // Wait for user commands
+                Console.WriteLine("");
+                Console.WriteLine("  List of commands  ");
+                Console.WriteLine("--------------------");
+                Console.WriteLine("   q    Quit");
+                Console.WriteLine("");
+
+                var nextCommand = string.Empty;
+
+                do
+                {
+                    nextCommand = Console.ReadLine();
+
+                }
+                while (nextCommand?.Trim().ToUpper() != "Q");
             }
 
             // Clean up engines

@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -161,6 +162,18 @@ namespace Dna.Web.Core
 
         #endregion
 
+        #region Constructor
+
+        /// <summary>
+        /// Default constructor
+        /// </summary>
+        public BaseEngine()
+        {
+
+        }
+
+        #endregion
+
         #region Processing Methods
 
         /// <summary>
@@ -216,19 +229,24 @@ namespace Dna.Web.Core
         /// <param name="path">The absolute path of the file to process</param>
         /// <param name="generatedFiles">A list of absolute file paths to already generated files in this loop, so they don't get regenerated</param>
         /// <param name="processedFiles">A list of absolute file paths to already processed files in this loop, so they don't get reprocess</param>
+        /// <param name="processedConfigurations">A list of absolute file paths to already processed resolved configurations for the folder</param>
         /// <param name="referenceLoopLevel">The nth level deep in a recursive reference loop, indicates this file change has been fired because a file this file references changed, not the file itself</param>
         /// <returns></returns>
-        protected async Task<EngineProcessResult> ProcessFileAsync(string path, List<string> generatedFiles, List<string> processedFiles, int referenceLoopLevel = 0)
+        protected async Task<EngineProcessResult> ProcessFileAsync(string path, List<string> generatedFiles, List<string> processedFiles, Dictionary<string, DnaConfiguration> processedConfigurations, int referenceLoopLevel = 0)
         {
             #region Setup Data
 
             // Prefix reference file processing with > indented to the indentation level
             var logPrefix = (referenceLoopLevel > 0 ? $"{"".PadLeft(referenceLoopLevel * 2, ' ') }> " : "");
 
+            // Process any configuration files for this file
+            var processedConfiguration = ProcessConfigurationFiles(path, processedConfigurations);
+
             // Create new processing data
-            var processingData = new FileProcessingData {
+            var processingData = new FileProcessingData
+            {
                 FullPath = path,
-                LocalConfiguration = DnaConfiguration.LoadFromFiles(new[] { Path.Combine(Path.GetDirectoryName(path), DnaSettings.ConfigurationFileName) }, Configuration)
+                LocalConfiguration = processedConfiguration
             };
 
             #endregion
@@ -469,7 +487,7 @@ namespace Dna.Web.Core
                 // NOTE: The generatedFiles and processedFiles are references (List's)
                 //       so the inner function will add to them the generated and processed files
                 //       no need to add them ourselves here
-                var result = await ProcessFileChangedAsync(reference, generatedFiles, processedFiles, referenceLoopLevel + 1);
+                var result = await ProcessFileChangedAsync(reference, generatedFiles, processedFiles, processedConfigurations, referenceLoopLevel + 1);
             }
 
             #endregion
@@ -483,14 +501,87 @@ namespace Dna.Web.Core
 
         #endregion
 
-        #region Constructor
+        #region Protected Helper Methods
 
         /// <summary>
-        /// Default constructor
+        /// Returns an already cached configuration setting for this files directory, or resolves the settings now
         /// </summary>
-        public BaseEngine()
+        /// <param name="filePath">The absolute file path being processed</param>
+        /// <param name="processedConfigurations">The list of already processed configuration settings</param>
+        /// <returns></returns>
+        private DnaConfiguration ProcessConfigurationFiles(string filePath, Dictionary<string, DnaConfiguration> processedConfigurations)
         {
+            // Get processed configuration path key (current directory as lower case)
+            var processedConfigurationPath = Path.GetDirectoryName(filePath).ToLower();
 
+            // Declare configuration variable
+            var processedConfiguration = default(DnaConfiguration);
+
+            // If we have already processed this configuration, get it
+            if (processedConfigurations.ContainsKey(processedConfigurationPath))
+                processedConfiguration = processedConfigurations[processedConfigurationPath];
+            // Otherwise...
+            else
+            {
+                // Get a list of paths to look in for configuration files
+                // starting from the monitor folder, going down into the child folder
+                var configurationSearchPaths = GetConfigurationSearchPaths(filePath);
+
+                // Resolve the configuration settings
+                processedConfiguration = DnaConfiguration.LoadFromFiles(configurationSearchPaths, Path.GetDirectoryName(filePath), Configuration);
+
+                // Add this to the cached list
+                processedConfigurations.Add(processedConfigurationPath, processedConfiguration);
+            }
+
+            // Return results
+            return processedConfiguration;
+        }
+
+        /// <summary>
+        /// Takes a path of a file being processed and returns a list of all configuration file paths that should be checked and loaded
+        /// </summary>
+        /// <param name="path">The path of the file being processed</param>
+        /// <returns></returns>
+        protected string[] GetConfigurationSearchPaths(string path)
+        {
+            // Get this files current directory
+            var currentDirectory = Path.GetFullPath(Path.GetDirectoryName(path));
+
+            // If this path is not within the monitor path (somehow?) then just return this folder
+            if (!currentDirectory.StartsWith(Configuration.MonitorPath))
+            {
+                // Break for developer as this is unusual
+                Debugger.Break();
+
+                // Return the current files directory path configuration file
+                return new[] { Path.Combine(currentDirectory, DnaSettings.ConfigurationFileName) };
+            }
+            // If this file is within the monitor path (as it should always be)...
+            else
+            {
+                // New list of configuration files
+                var configurationFiles = new List<string>();
+
+                // Get all directories until we hit the monitor path
+                while (currentDirectory != Configuration.MonitorPath)
+                {
+                    // Add the current folders configuration file
+                    configurationFiles.Add(Path.Combine(currentDirectory, DnaSettings.ConfigurationFileName));
+
+                    // Go up to next folder
+                    currentDirectory = Path.GetDirectoryName(currentDirectory);
+                }
+
+                // Add the monitor path itself
+                configurationFiles.Add(Path.Combine(currentDirectory, DnaSettings.ConfigurationFileName));
+
+                // Reverse order so parents are first and children take priority (load after)
+                configurationFiles.Reverse();
+
+                // Return list
+                return configurationFiles.ToArray();
+            }
         }
 
         #endregion
@@ -564,11 +655,10 @@ namespace Dna.Web.Core
             // Find all paths
             await FindAllMonitoredFilesAsync();
 
-            // Keep a log of all files that have been generated already
+            // Keep a log of processed and generated info
             var generatedFiles = new List<string>();
-
-            // Keep a log of all files that have been processed already
             var processedFiles = new List<string>();
+            var processedConfigurations = new Dictionary<string, DnaConfiguration>();
 
             // For each file
             foreach (var file in AllMonitoredFiles)
@@ -581,7 +671,7 @@ namespace Dna.Web.Core
                 var result = await AsyncAwaitor.AwaitResultAsync(FileChangeLockKey, () =>
                 {
                     // Process file
-                    return ProcessFileChangedAsync(file.Path, generatedFiles, processedFiles);
+                    return ProcessFileChangedAsync(file.Path, generatedFiles, processedFiles, processedConfigurations);
                 });
             };
         }
@@ -602,12 +692,13 @@ namespace Dna.Web.Core
             // Keep a list of processed and generated files
             var generatedFiles = new List<string>();
             var processedFiles = new List<string>();
+            var processedConfigurations = new Dictionary<string, DnaConfiguration>();
 
             // Lock this from running more than one file processing at a time...
             await AsyncAwaitor.AwaitAsync(FileChangeLockKey, () =>
             {
                 // Process the file
-                return ProcessFileChangedAsync(path, generatedFiles, processedFiles);
+                return ProcessFileChangedAsync(path, generatedFiles, processedFiles, processedConfigurations);
             });
         }
 
@@ -617,9 +708,10 @@ namespace Dna.Web.Core
         /// <param name="path">The full path of the file to process</param>
         /// <param name="generatedFiles">A list of absolute file paths to already generated files in this loop, so they don't get regenerated</param>
         /// <param name="processedFiles">A list of absolute file paths to already processed files in this loop, so they don't get reprocessed</param>
+        /// <param name="processedConfigurations">A list of absolute file paths to already processed resolved configurations for the folder</param>
         /// <param name="referenceLoopLevel">The nth level deep in a recursive reference loop, indicates this file change has been fired because a file this file references changed, not the file itself</param>
         /// <returns></returns>
-        protected async Task<EngineProcessResult> ProcessFileChangedAsync(string path, List<string> generatedFiles, List<string> processedFiles, int referenceLoopLevel = 0)
+        protected async Task<EngineProcessResult> ProcessFileChangedAsync(string path, List<string> generatedFiles, List<string> processedFiles, Dictionary<string, DnaConfiguration> processedConfigurations, int referenceLoopLevel = 0)
         {
             // Prefix reference file processing with >
             var logPrefix = (referenceLoopLevel > 0 ? $"{"".PadLeft(referenceLoopLevel * 2)}> " : "");
@@ -627,7 +719,7 @@ namespace Dna.Web.Core
             try
             {
                 // Process the file
-                var result = await ProcessFileAsync(path, generatedFiles, processedFiles, referenceLoopLevel);
+                var result = await ProcessFileAsync(path, generatedFiles, processedFiles, processedConfigurations, referenceLoopLevel);
 
                 // Check if we have an unknown response
                 if (result == null)
@@ -777,7 +869,7 @@ namespace Dna.Web.Core
                 // Get default output name
                 data.OutputPaths.Add(new FileOutputData
                 {
-                    FullPath = GetDefaultOutputPath(data.FullPath),
+                    FullPath = GetDefaultOutputPath(data),
                     FileContents = data.UnprocessedFileContents
                 });
             }
@@ -811,8 +903,12 @@ namespace Dna.Web.Core
                 outputPath = outputPath.Split(':')[0];
             }
 
+            // Add extension if not specified
+            if (!Path.HasExtension(outputPath))
+                outputPath += OutputExtension;
+
             // Get the full path from the provided relative path based on the input files location
-            var fullPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(data.FullPath), outputPath));
+            var fullPath = Path.GetFullPath(Path.Combine(data.LocalConfiguration.OutputPath, outputPath));
 
             // Add this to the list
             data.OutputPaths.Add(new FileOutputData
@@ -1119,6 +1215,10 @@ namespace Dna.Web.Core
             // First look in the same folder
             var foundPath = Path.Combine(Path.GetDirectoryName(path), includePath);
 
+            // Add file extension if none specified and this engine only looks for one extension type
+            if (EngineExtensions.Count == 1 && !foundPath.EndsWith(EngineExtensions[0]) && EngineExtensions[0] != ".*")
+                foundPath = foundPath + EngineExtensions[0];
+
             // If we found it, return contents
             if (FileManager.FileExists(foundPath))
             {
@@ -1378,11 +1478,11 @@ namespace Dna.Web.Core
         /// <summary>
         /// Changes the file extension to the default output file extension
         /// </summary>
-        /// <param name="path">The full path to the file</param>
+        /// <param name="data">The file processing data</param>
         /// <returns></returns>
-        protected string GetDefaultOutputPath(string path)
+        protected string GetDefaultOutputPath(FileProcessingData data)
         {
-            return Path.Combine(Path.GetDirectoryName(path), Path.GetFileNameWithoutExtension(path) + OutputExtension);
+            return Path.Combine(data.LocalConfiguration.OutputPath, Path.GetFileNameWithoutExtension(data.FullPath) + OutputExtension);
         }
 
         #endregion

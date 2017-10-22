@@ -1,5 +1,5 @@
-<!--@ output server.html:server @-->
-<!--@ output local.html @-->
+<!--@ output server:server @-->
+<!--@ output local @-->
 
 <h1>Header</h1>
 <!--@ inline <h1>This is in all outputs</h1> @-->

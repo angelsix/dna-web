@@ -89,33 +89,9 @@ namespace Dna.Web.Core
                 // For now just output in the same directory as Sass file
                 data.OutputPaths.Add(new FileOutputData
                 {
-                    FullPath = GetDefaultOutputPath(data.FullPath),
+                    FullPath = GetDefaultOutputPath(data),
                     FileContents = data.UnprocessedFileContents
                 });
-            });
-        }
-
-        /// <summary>
-        /// Tweak the output path based on the settings
-        /// </summary>
-        /// <param name="data"></param>
-        /// <param name="output"></param>
-        /// <returns></returns>
-        protected override Task PreGenerateFile(FileProcessingData data, FileOutputData output)
-        {
-            return Task.Run(() =>
-            {
-                var sassPath = data.LocalConfiguration.SassOutputPath;
-
-                if (!string.IsNullOrEmpty(sassPath))
-                {
-                    // Resolve relative path
-                    if (!Path.IsPathRooted(sassPath))
-                        sassPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(data.FullPath), sassPath));
-
-                    // Set the output path to absolute path
-                    output.FullPath = Path.Combine(sassPath, Path.GetFileNameWithoutExtension(data.FullPath) + OutputExtension);
-                }
             });
         }
 

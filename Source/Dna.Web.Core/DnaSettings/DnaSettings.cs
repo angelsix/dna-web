@@ -45,8 +45,8 @@ namespace Dna.Web.Core
         public const string ConfigurationNameLogLevel = "logLevel";
 
         /// <summary>
-        /// The name of the configuration setting for the Sass Output Path
+        /// The name of the configuration setting for the Output Path
         /// </summary>
-        public const string ConfigurationNameSassOutputPath = "sassPath";
+        public const string ConfigurationNameOutputPath = "outputPath";
     }
 }

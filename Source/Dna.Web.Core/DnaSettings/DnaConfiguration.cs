@@ -1,12 +1,22 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.IO;
+using System.Linq.Expressions;
 
 namespace Dna.Web.Core
 {
     /// <summary>
     /// The configuration for a Dna Web environment
     /// </summary>
+    /// <remarks>
+    /// To add another property:
+    /// 
+    ///  1. Add public property to DnaConfiguration class, and JsonProperty name to match
+    ///  2. Add TryGetSetting for that property into the MergeSettings
+    ///  3. Add log output in LogFinalConfiguration
+    ///  4. Add any override values from command line interpreters and such for the new property
+    /// 
+    /// </remarks>
     public class DnaConfiguration
     {
         #region Public Properties
@@ -15,35 +25,54 @@ namespace Dna.Web.Core
         /// The paths to monitor for files
         /// </summary>
         [JsonProperty(PropertyName = DnaSettings.ConfigurationNameMonitorPath)]
-        public string MonitorPath { get; set; } = ".";
+        public string MonitorPath { get; set; }
 
         /// <summary>
         /// The generate files processing option on start up
         /// </summary>
         [JsonProperty(PropertyName = DnaSettings.ConfigurationNameGenerateOnStart)]
-        public GenerateOption? GenerateOnStart { get; set; } = GenerateOption.None;
+        public GenerateOption? GenerateOnStart { get; set; }
 
         /// <summary>
         /// True if the engine should spin up, process and then close without waiting for user input
         /// </summary>
         [JsonProperty(PropertyName = DnaSettings.ConfigurationNameProcessAndClose)]
-        public bool? ProcessAndClose { get; set; } = false;
+        public bool? ProcessAndClose { get; set; }
 
         /// <summary>
         /// The level of detail to log out
         /// </summary>
         [JsonProperty(PropertyName = DnaSettings.ConfigurationNameLogLevel)]
-        public LogLevel? LogLevel { get; set; } = Core.LogLevel.Informative;
+        public LogLevel? LogLevel { get; set; }
 
         /// <summary>
-        /// The output path of css output files based on the location of the configuration file
+        /// The output path of any output files based on the location of the configuration file
         /// </summary>
-        [JsonProperty(PropertyName = DnaSettings.ConfigurationNameSassOutputPath)]
-        public string SassOutputPath { get; set; } = "";
+        [JsonProperty(PropertyName = DnaSettings.ConfigurationNameOutputPath)]
+        public string OutputPath { get; set; }
 
         #endregion
 
-        #region Public Static Helpers
+        #region  Public Methods
+
+        /// <summary>
+        /// Logs this configuration files settings out as the "Final Configuration" to the log
+        /// </summary>
+        public void LogFinalConfiguration()
+        {
+            CoreLogger.Log("Final Configuration", type: LogType.Information);
+            CoreLogger.Log("-------------------", type: LogType.Information);
+            CoreLogger.LogTabbed("Monitor", MonitorPath, 1, type: LogType.Information);
+            CoreLogger.LogTabbed("Generate On Start", GenerateOnStart.ToString(), 1, type: LogType.Information);
+            CoreLogger.LogTabbed("Process And Close", ProcessAndClose.ToString(), 1, type: LogType.Information);
+            CoreLogger.LogTabbed("Log Level", LogLevel.ToString(), 1, type: LogType.Information);
+            CoreLogger.LogTabbed("Output Path", OutputPath, 1, type: LogType.Information);
+            CoreLogger.Log("", type: LogType.Information);
+        }
+
+        #endregion
+
+        #region Public Static Helper Methods
 
         /// <summary>
         /// Attempts to load a <see cref="DnaConfiguration"/> from a configuration file
@@ -82,7 +111,7 @@ namespace Dna.Web.Core
         /// <param name="filePaths">A list of all paths to the configuration files</param>
         /// <param name="currentConfiguration">The current configuration to merge the settings with</param>
         /// <param name="defaultConfigurationIndex">If specified, it will treat the file path at the index as the default configuration, and so use the environments current directory for relative paths</param>
-        public static DnaConfiguration LoadFromFiles(string[] filePaths, DnaConfiguration currentConfiguration = null, int defaultConfigurationIndex = -1)
+        public static DnaConfiguration LoadFromFiles(string[] filePaths, string currentFolder, DnaConfiguration currentConfiguration = null, int defaultConfigurationIndex = -1)
         {
             // Create final setting as default
             var finalSetting = new DnaConfiguration();
@@ -98,7 +127,7 @@ namespace Dna.Web.Core
                 var filePath = filePaths[i];
 
                 // Default config uses current directory as relative path source
-                var currentFolder = i == defaultConfigurationIndex ? Environment.CurrentDirectory : Path.GetDirectoryName(filePath);
+                var configFolder = i == defaultConfigurationIndex ? Environment.CurrentDirectory : Path.GetDirectoryName(filePath);
 
                 // Try and load the settings
                 var settings = LoadFromFile(filePath);
@@ -110,85 +139,107 @@ namespace Dna.Web.Core
                 if (settings == null)
                     continue;
 
-                CoreLogger.Log($"Configuration: {filePath}");
-
-                // Monitor Path
-                if (!string.IsNullOrEmpty(settings.MonitorPath))
-                {
-                    // Set value
-                    finalSetting.MonitorPath = settings.MonitorPath;
-
-                    // Log it
-                    CoreLogger.LogTabbed("Monitor", finalSetting.MonitorPath, 1);
-
-                    // Resolve path
-                    var unresolvedPath = finalSetting.MonitorPath;
-                    if (!Path.IsPathRooted(unresolvedPath))
-                    {
-                        finalSetting.MonitorPath = Path.GetFullPath(Path.Combine(currentFolder, unresolvedPath));
-
-                        // Log it
-                        CoreLogger.LogTabbed("Monitor Resolved", finalSetting.MonitorPath, 1);
-                    }
-                }
-
-                // Generate On Start
-                if (settings.GenerateOnStart.HasValue)
-                {
-                    // Set value
-                    finalSetting.GenerateOnStart = settings.GenerateOnStart;
-
-                    // Log it
-                    CoreLogger.LogTabbed("GenerateOnStart", finalSetting.GenerateOnStart.ToString(), 1);
-                }
-
-                // Process and Close
-                if (settings.ProcessAndClose.HasValue)
-                {
-                    // Set value
-                    finalSetting.ProcessAndClose = settings.ProcessAndClose;
-
-                    // Log it
-                    CoreLogger.LogTabbed("ProcessAndClose", finalSetting.ProcessAndClose.ToString(), 1);
-                }
-
-                // Log Level
-                if (settings.LogLevel.HasValue)
-                {
-                    // Set value
-                    finalSetting.LogLevel = settings.LogLevel;
-
-                    // Log it
-                    CoreLogger.LogTabbed("LogLevel", finalSetting.LogLevel.ToString(), 1);
-                }
-
-                // Sass Output Path
-                if (!string.IsNullOrEmpty(settings.SassOutputPath))
-                {
-                    // Set value
-                    finalSetting.SassOutputPath = settings.SassOutputPath;
-
-                    // Log it
-                    CoreLogger.LogTabbed("SassPath", finalSetting.SassOutputPath, 1);
-
-                    // Resolve path
-                    var unresolvedPath = finalSetting.SassOutputPath;
-                    if (!Path.IsPathRooted(unresolvedPath))
-                    {
-                        finalSetting.SassOutputPath = Path.GetFullPath(Path.Combine(currentFolder, unresolvedPath));
-
-                        // Log it
-                        CoreLogger.LogTabbed("SassPath Resolved", finalSetting.SassOutputPath, 1);
-                    }
-                }
-
-                // Space between each configuration details for console log niceness
-                CoreLogger.Log("");
+                // Merge the settings
+                MergeSettings(settings, finalSetting, filePath, configFolder);
             }
+
+            // If output path is not specified, set it to the callers file path
+            if (string.IsNullOrEmpty(finalSetting.OutputPath))
+                finalSetting.OutputPath = currentFolder;
 
             // Return the result
             return finalSetting;
         }
+
+        #endregion
+
+        #region Private Helper Methods
+
+        /// <summary>
+        /// Merges the current settings into the final settings if the values are present (not null or not empty strings)
+        /// </summary>
+        /// <param name="currentSettings">The settings loaded from the current configuration file</param>
+        /// <param name="finalSettings">The final merged configuration settings</param>
+        /// <param name="configurationFilePath">The file path to the current configuration settings (for logging purposes)</param>
+        /// <param name="currentPath">The current folder that any string path values should be resolved to absolute paths from</param>
+        private static void MergeSettings(DnaConfiguration currentSettings, DnaConfiguration finalSettings, string configurationFilePath, string currentPath)
+        {
+            CoreLogger.Log($"Configuration: {configurationFilePath}");
+
+            // Monitor Path
+            TryGetSetting(() => currentSettings.MonitorPath, () => finalSettings.MonitorPath, resolvePath: true, currentPath: currentPath);
+
+            // Generate On Start
+            TryGetSetting(() => currentSettings.GenerateOnStart, () => finalSettings.GenerateOnStart);
+
+            // Process And Close
+            TryGetSetting(() => currentSettings.ProcessAndClose, () => finalSettings.ProcessAndClose);
+
+            // Log Level
+            TryGetSetting(() => currentSettings.LogLevel, () => finalSettings.LogLevel);
+
+            // Output Path
+            TryGetSetting(() => currentSettings.OutputPath, () => finalSettings.OutputPath, resolvePath: true, currentPath: currentPath);
+
+            // Space between each configuration details for console log niceness
+            CoreLogger.Log("");
+        }
+
+        /// <summary>
+        /// Get's the setting from the given expression and merges it with the final value expression if it is not null/default
+        /// </summary>
+        /// <param name="currentValueExpression">The expression to get the current setting property</param>
+        /// <param name="finalValueExpression">The expression to get the final setting property</param>
+        /// <param name="resolvePath">True if the expression value is a string and the value is a path that should be resolved to absolute if it is relative</param>
+        /// <param name="currentPath">The current folder that any string path values should be resolved to absolute paths from</param>
+        private static void TryGetSetting<T>(Expression<Func<T>> currentValueExpression, Expression<Func<T>> finalValueExpression, bool resolvePath = false, string currentPath = null)
+        {
+            // Get the current value
+            var currentValue = currentValueExpression.GetPropertyValue();
+
+            // Get property name (for the logs)
+            var propertyName = currentValueExpression.GetPropertyName();
+
+            // Get if type is a string
+            if (currentValue is string currentString)
+            {
+                // If string is not null or empty...
+                if (!string.IsNullOrEmpty(currentString))
+                {
+                    // Set final value
+                    finalValueExpression.SetPropertyValue<T>(currentValue);
+
+                    // Log it
+                    CoreLogger.LogTabbed(propertyName, currentString, 1);
+
+                    if (resolvePath)
+                    {
+                        // If path is unresolved...
+                        if (!Path.IsPathRooted(currentString))
+                        {
+                            // Resolve path
+                            var resolvedPath = Path.GetFullPath(Path.Combine(currentPath ?? string.Empty, currentString));
+
+                            // Set resolved path
+                            finalValueExpression.SetPropertyValue<T>(resolvedPath);
+
+                            // Log it
+                            CoreLogger.LogTabbed($"{propertyName} Resolved", resolvedPath, 1);
+                        }
+                    }
+                }
+            }
+            // Otherwise, if we have a value (not null)...
+            else if (currentValue != null)
+            {
+                // Set final value
+                finalValueExpression.SetPropertyValue<T>(currentValue);
+
+                // Log it
+                CoreLogger.LogTabbed(propertyName, currentValue.ToString(), 1);
+            }
+        }
+
         #endregion
     }
 }

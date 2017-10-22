@@ -1,5 +1,5 @@
-<!--@ output index-full.html:wrapped @-->
-<!--@ output index-content.html @-->
-<!--@ include header.dhtml:wrapped @-->
+<!--@ output index-full:wrapped @-->
+<!--@ output index-content @-->
+<!--@ include header:wrapped @-->
     <h1>Header</h1>
-<!--@ include footer.dhtml:wrapped @-->
+<!--@ include footer:wrapped @-->

@@ -8,6 +8,8 @@
 
 Source/Dna.Web.Installer/Installs/
 
+Examples/Outputs/
+
 Examples/*.htm
 Examples/*.html
 Examples/*/*.htm

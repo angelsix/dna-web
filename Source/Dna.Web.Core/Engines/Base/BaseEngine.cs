@@ -1229,6 +1229,20 @@ namespace Dna.Web.Core
                 return returnContents ? File.ReadAllText(foundPath) : string.Empty;
             }
 
+            // Try file with an underscore if it doesn't start with it (as partial files can start with _)
+            if (Path.GetFileName(foundPath)[0] != '_')
+                foundPath = Path.Combine(Path.GetDirectoryName(foundPath), "_" + Path.GetFileName(foundPath));
+
+            // If we found it, return contents
+            if (FileManager.FileExists(foundPath))
+            {
+                // Set the resolved path
+                resolvedPath = foundPath;
+
+                // Return the contents
+                return returnContents ? File.ReadAllText(foundPath) : string.Empty;
+            }
+
             // Not found
             return null;
         }

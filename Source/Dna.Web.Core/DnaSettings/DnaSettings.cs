@@ -48,5 +48,10 @@ namespace Dna.Web.Core
         /// The name of the configuration setting for the Output Path
         /// </summary>
         public const string ConfigurationNameOutputPath = "outputPath";
+
+        /// <summary>
+        /// The name of the configuration setting for the Live Server Directories
+        /// </summary>
+        public const string ConfigurationNameLiveServerDirectories = "liveServers";
     }
 }

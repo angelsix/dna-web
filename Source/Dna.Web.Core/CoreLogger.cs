@@ -61,7 +61,7 @@ namespace Dna.Web.Core
         public static void LogTabbed(string name, string value, int tabLevel, LogType type = LogType.Diagnostic)
         {
             // Add 4 spaces per tab level
-            Log($"{"".PadLeft(tabLevel * 4, ' ')}{name}: {value}", type: type);
+            Log($"{"".PadLeft(tabLevel * 4, ' ')}{name}{(string.IsNullOrEmpty(value) ? "" : (": " + value))}", type: type);
         }
 
         /// <summary>

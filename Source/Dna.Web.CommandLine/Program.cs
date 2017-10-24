@@ -1,8 +1,10 @@
 ﻿using Dna.Web.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Reflection;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace Dna.Web.CommandLine
@@ -15,6 +17,11 @@ namespace Dna.Web.CommandLine
         /// The Dna Configuration
         /// </summary>
         public static DnaConfiguration Configuration = new DnaConfiguration();
+
+        /// <summary>
+        /// Manager for all LiveServer's
+        /// </summary>
+        public static LiveServerManager LiveServerManager = new LiveServerManager();
 
         #endregion
 
@@ -159,6 +166,16 @@ namespace Dna.Web.CommandLine
 
             #endregion
 
+            #region All Configuration Files (To Find LiveServers)
+
+            // Search the monitor folder now for all configuration files
+            var allConfigurationFiles = BaseEngine.GetDirectoryFiles(Configuration.MonitorPath, DnaSettings.ConfigurationFileName).ToArray();
+
+            // Merge all LiveServer's from the configurations
+            Configuration = DnaConfiguration.LoadFromFiles(allConfigurationFiles, null, Configuration, globalSettingsOnly: true);
+
+            #endregion
+
             // Log final configuration
             Configuration.LogFinalConfiguration();
 
@@ -190,9 +207,43 @@ namespace Dna.Web.CommandLine
 
             #endregion
 
+            #region Live Servers
+
+            CoreLogger.Log("", type: LogType.Information);
+
+            // Delay after first open to allow browser to open up 
+            // so consecutive opens show in new tabs not new instances
+            var firstOpen = true;
+
+            foreach (var directory in Configuration.LiveServerDirectories)
+            {
+                // Spin up listener
+                var listenUrl = LiveServerManager.CreateLiveServer(directory);
+
+                // Open up the listen URL
+                if (!string.IsNullOrEmpty(listenUrl))
+                {
+                    // Open browser
+                    OpenBrowser(listenUrl);
+
+                    // Wait if first time
+                    if (firstOpen)
+                        await Task.Delay(500);
+
+                    // No longer first open
+                    firstOpen = false;
+                }
+            }
+
+            #endregion
+
             // If we should wait, then wait
             if (Configuration.ProcessAndClose == false)
             {
+                // Give time for Live Servers to open browsers and request initial files
+                // Allow 500ms per live server as a time to expect the page to have loaded
+                await Task.Delay((Configuration.LiveServerDirectories?.Count ?? 0) * 500);
+
                 // Wait for user commands
                 Console.WriteLine("");
                 Console.WriteLine("  List of commands  ");
@@ -200,18 +251,24 @@ namespace Dna.Web.CommandLine
                 Console.WriteLine("   q    Quit");
                 Console.WriteLine("");
 
+                // Variable for next command
                 var nextCommand = string.Empty;
 
                 do
                 {
+                    // Get next command
                     nextCommand = Console.ReadLine();
 
                 }
-                while (nextCommand?.Trim().ToUpper() != "Q");
+                // Until the user types q to quit
+                while (nextCommand?.Trim().ToLower() != "q");
             }
 
             // Clean up engines
             engines.ForEach(engine => engine.Dispose());
+
+            // Stop live servers
+            await LiveServerManager.StopAsync();
 
             // If we should wait, then wait
             if (Configuration.ProcessAndClose == false)
@@ -219,6 +276,36 @@ namespace Dna.Web.CommandLine
                 Console.WriteLine("Press any key to close");
                 Console.ReadKey();
             }
+        }
+
+        /// <summary>
+        /// Opens on URL on this machine
+        /// </summary>
+        /// <param name="url">The URL to open</param>
+        /// <returns></returns>
+        private static bool OpenBrowser(string url)
+        {
+            // For windows use a command line call to start URL
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Process.Start(new ProcessStartInfo("cmd", $"/c start {url.Replace("&", "^&")}") { CreateNoWindow = true });
+                return true;
+            }
+            // For Linux use xdg-open
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                Process.Start("xdg-open", url);
+                return true;
+            }
+            // For Mac use open
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                Process.Start("open", url);
+                return true;
+            }
+
+            // Unknown system
+            return false;
         }
     }
 }

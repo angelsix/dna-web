@@ -194,8 +194,7 @@ namespace Dna.Web.Core
                     includePath += ScssExtension;
 
                 // Resolve any relative aspects of the path
-                if (!Path.IsPathRooted(includePath))
-                    includePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(filePath), includePath));
+                includePath = DnaConfiguration.ResolveFullPath(Path.GetDirectoryName(filePath), includePath, false, out bool wasRelative);
 
                 // Sass rules (from testing other Sass compilers) show that if an include doesn't start with an underscore
                 // but both the underscore file and file without an underscore exist (such as a.scss and _a.scss)

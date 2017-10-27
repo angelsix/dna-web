@@ -404,16 +404,16 @@ window.onload = checkForChanges;";
             var query = context.Request.Url.Query;
 
             // If this is a request for the auto-reload script...
-            if (string.Equals(query, AutoReloadRequestQueryUrl, StringComparison.InvariantCultureIgnoreCase))
+            if (query.EqualsIgnoreCase(AutoReloadRequestQueryUrl))
             {
-                // Serve the javascript script
+                // Serve the Javascript script
                 ServeString(AutoReloadJavascript, MimeTypes.GetExtension("file.js"), context);
 
                 // Done
                 return;
             }
             // If this is a request to return once there are changes...
-            if (string.Equals(query, SignalNewContentQuery, StringComparison.InvariantCultureIgnoreCase))
+            if (query.EqualsIgnoreCase(SignalNewContentQuery))
             {
                 // Pass off this request to simply return successful once it get's told there is a file change
                 HangUntilFileChange(context);
@@ -432,7 +432,7 @@ window.onload = checkForChanges;";
                     url = url.Substring(1);
 
                 // Now look in the watch directory for a file with this name...
-                var filePath = Path.GetFullPath(Path.Combine(ServingDirectory, url));
+                var filePath = DnaConfiguration.ResolveFullPath(ServingDirectory, url, false, out bool wasRelative);
 
                 // If this file exists...
                 if (File.Exists(filePath))

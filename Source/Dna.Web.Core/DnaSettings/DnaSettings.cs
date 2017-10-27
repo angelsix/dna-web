@@ -4,18 +4,55 @@ using System.IO;
 namespace Dna.Web.Core
 {
     /// <summary>
-    /// Global settings for the Dna Web system
+    /// Global settings for the DnaWeb system
     /// </summary>
     public static class DnaSettings
     {
+        #region Public Static Members
+
         /// <summary>
         /// The filename of the configuration file
         /// </summary>
         public static string ConfigurationFileName => "dna.config";
 
         /// <summary>
+        /// The filename of the Live Data Sources configuration file
+        /// </summary>
+        public static string LiveDataConfigurationFileName => "dna.live.config";
+
+        /// <summary>
+        /// The extension used for DnaWeb files that generate HTML content
+        /// </summary>
+        public static string DnaWebFileExtension => ".dhtml";
+
+        /// <summary>
+        /// The folder name where Live Data Variables are stored
+        /// </summary>
+        public static string LiveDataFolderVariables => "Variables";
+
+        /// <summary>
+        /// The file extension for Live Data Variable files
+        /// </summary>
+        public static string LiveDataFolderVariablesExtension => ".dna";
+
+        /// <summary>
+        /// The folder name where Live Data Templates are stored
+        /// </summary>
+        public static string LiveDataFolderTemplates => "Templates";
+
+        /// <summary>
+        /// The file extension for Live Data Template files
+        /// </summary>
+        public static string LiveDataFolderTemplateExtension => ".zip";
+
+        /// <summary>
+        /// The default prefix to use when finding variables/templates if one is not specified
+        /// </summary>
+        public static string LiveDataDefaultPrefix => "dna";
+
+        /// <summary>
         /// The location of the configuration file to load based on the current environment 
-        /// (usually loading a configuration file from the location we we started up from)
+        /// (usually loading a configuration file from the location we started up from)
         /// </summary>
         public static string SpecificConfigurationFilePath => Path.Combine(Environment.CurrentDirectory, ConfigurationFileName);
 
@@ -23,6 +60,26 @@ namespace Dna.Web.Core
         /// The location of the default configuration file to load before any other configuration file
         /// </summary>
         public static string DefaultConfigurationFilePath => Path.Combine(AppContext.BaseDirectory, ConfigurationFileName);
+
+        /// <summary>
+        /// The version of DnaWeb
+        /// </summary>
+        public static Version Version { get; private set; } = typeof(DnaSettings).Assembly.GetName().Version;
+
+        #endregion
+
+        #region Public Constant Members
+
+        #region General
+
+        /// <summary>
+        /// The folder name where Live Data Sources are stored in the cache folder
+        /// </summary>
+        public const string CacheSubFolderLiveData = "LiveData";
+
+        #endregion
+
+        #region dna.config Json Names
 
         /// <summary>
         /// The name of the configuration setting for the Monitor Path
@@ -53,5 +110,24 @@ namespace Dna.Web.Core
         /// The name of the configuration setting for the Live Server Directories
         /// </summary>
         public const string ConfigurationNameLiveServerDirectories = "liveServers";
+
+        /// <summary>
+        /// The name of the configuration setting for the Live Data Sources
+        /// </summary>
+        public const string ConfigurationNameLiveDataSources = "liveDataSources";
+
+        /// <summary>
+        /// The name of the configuration setting for a Live Data Source class Source property
+        /// </summary>
+        public const string ConfigurationNameLiveDataSource = "source";
+
+        /// <summary>
+        /// The name of the configuration setting for a Cache Path
+        /// </summary>
+        public const string ConfigurationNameCachePath = "cachePath";
+
+        #endregion
+
+        #endregion
     }
 }

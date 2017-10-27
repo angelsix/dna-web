@@ -863,7 +863,7 @@ html
             finally
             {
                 // Re-enable file watch
-                DisableWatching = true;
+                DisableWatching = false;
 
                 // If it failed...
                 if (!successful)

@@ -34,9 +34,16 @@ namespace Dna.Web.Core
         protected string mStandardVariableRegex = @"<!--\$(.+?(?=\$-->))\$-->";
 
         /// <summary>
-        /// The regex used to find variables to be replaced with the values
+        /// The regex used to find Live Variables to be replaced with the values
+        /// $$!variable$$
         /// </summary>
-        protected string mVariableUseRegex = @"\$\$(.+?(?=\$\$))\$\$";
+        protected string mLiveVariableUseRegex = @"\$\$!(.+?(?=\$\$))\$\$";
+
+        /// <summary>
+        /// The regex used to find variables to be replaced with the values
+        /// $$variable$$
+        /// </summary>
+        protected string mVariableUseRegex = @"\$\$(?!!)(.+?(?=\$\$))\$\$";
 
         /// <summary>
         /// The prefixed string in front of a variable to flag it as a special Dna variable
@@ -98,6 +105,11 @@ namespace Dna.Web.Core
         /// The configuration to use for this engine
         /// </summary>
         public DnaConfiguration Configuration { get; set; }
+
+        /// <summary>
+        /// The DnaWeb Environment this engine is running inside of
+        /// </summary>
+        public DnaEnvironment DnaEnvironment { get; set; }
 
         /// <summary>
         /// The desired default output extension for generated files if not overridden
@@ -265,7 +277,7 @@ namespace Dna.Web.Core
             #region Process
 
             // Skip processing this file if we have already processed it
-            if (processedFiles.Any(toSkip => string.Equals(toSkip, processingData.FullPath, StringComparison.CurrentCultureIgnoreCase)) == true)
+            if (processedFiles.Any(toSkip => toSkip.EqualsIgnoreCase(processingData.FullPath)) == true)
             {
                 Log($"{logPrefix}Skipping already processed file {processingData.FullPath}", type: LogType.Warning);
                 return new EngineProcessResult { Success = true, SkippedProcessing = true, Path = path };
@@ -292,6 +304,13 @@ namespace Dna.Web.Core
 
             // Log the start
             Log($"{logPrefix}Processing file {path}...", type: LogType.Information);
+
+            // Process any Live Variables
+            // If we process any, the file will of been updated and saved
+            // and will get picked up and re-processed... so return here
+            if (await ProcessLiveVariablesAsync(processingData, logPrefix))
+                return new EngineProcessResult { Success = true, Path = path };
+
 
             // Find all outputs
             if (WillProcessOutputTags)
@@ -398,7 +417,7 @@ namespace Dna.Web.Core
                     await PreGenerateFile(processingData, outputPath);
 
                     // Skip any files we want to skip
-                    if (generatedFiles?.Any(toSkip => string.Equals(toSkip, outputPath.FullPath, StringComparison.CurrentCultureIgnoreCase)) == true)
+                    if (generatedFiles?.Any(toSkip => toSkip.EqualsIgnoreCase(outputPath.FullPath)) == true)
                     {
                         Log($"{logPrefix}Skipping already generated file {outputPath.FullPath}", type: LogType.Warning);
                         continue;
@@ -443,7 +462,7 @@ namespace Dna.Web.Core
                     catch (Exception ex)
                     {
                         // If any failed, return the failure
-                        processingData.Error += $"{System.Environment.NewLine}Error saving generated file {outputPath.FullPath}. {ex.Message}. {System.Environment.NewLine}";
+                        processingData.Error += $"{Environment.NewLine}Error saving generated file {outputPath.FullPath}. {ex.Message}. {System.Environment.NewLine}";
                     }
                 }
             }
@@ -546,7 +565,7 @@ namespace Dna.Web.Core
         protected string[] GetConfigurationSearchPaths(string path)
         {
             // Get this files current directory
-            var currentDirectory = Path.GetFullPath(Path.GetDirectoryName(path));
+            var currentDirectory = DnaConfiguration.ResolveFullPath(string.Empty, Path.GetDirectoryName(path), false, out bool wasRelative);
 
             // If this path is not within the monitor path (somehow?) then just return this folder
             if (!currentDirectory.StartsWith(Configuration.MonitorPath))
@@ -664,7 +683,7 @@ namespace Dna.Web.Core
             foreach (var file in AllMonitoredFiles)
             {
                 // Don't process files twice
-                if (generatedFiles.Any(f => string.Equals(f, file.Path, StringComparison.CurrentCultureIgnoreCase)))
+                if (generatedFiles.Any(f => f.EqualsIgnoreCase(file.Path)))
                     continue;
 
                 // Lock this from running more than one file processing at a time...
@@ -686,6 +705,11 @@ namespace Dna.Web.Core
         /// <param name="path">The path of the file that has changed</param>
         private async void Watcher_FileChangedAsync(string path)
         {
+            // If we are temporarily ignoring file changes...
+            if (DnaEnvironment?.DisableWatching == true)
+                // Return
+                return;
+
             // Update all monitored files (used in searching for references)
             await FindAllMonitoredFilesAsync();
 
@@ -768,6 +792,75 @@ namespace Dna.Web.Core
         #endregion
 
         #region Command Tags
+
+        /// <summary>
+        /// Processes any Live Variables and updates the actual source file, then carries on the processing
+        /// </summary>
+        /// <param name="data">The file processing data</param>
+        /// <param name="logPrefix">The prefix to any log messages</param>
+        private async Task<bool> ProcessLiveVariablesAsync(FileProcessingData data, string logPrefix = "")
+        {
+            // Create a match variable
+            Match match = null;
+
+            // Get a copy of the contents
+            var contents = data.UnprocessedFileContents;
+
+            // Keep a flag if we find any matches
+            var anyMatch = false;
+
+            // Go though all matches
+            while (match == null || match.Success)
+            {
+                // The next found variable
+                LiveDataSourceVariable foundVariable = null;
+
+                // Find next Live Variables
+                match = Regex.Match(contents, mLiveVariableUseRegex);
+
+                while (foundVariable == null && match.Success)
+                {
+                    // Make sure we have enough groups
+                    if (match.Groups.Count < 2)
+                        continue;
+
+                    // NOTE: Group 0 = $$!VariableHere$$
+                    //       Group 1 = VariableHere
+
+                    // Get variable without the surrounding tags $$! $$
+                    var variableName = match.Groups[1].Value;
+
+                    // Check if we have a Live Variable
+                    foundVariable = DnaEnvironment.LiveDataManager.FindVariable(variableName);
+
+                    // If found live variable...
+                    if (foundVariable != null)
+                    {
+                        // Log it
+                        Log($"{logPrefix}Injecting Live Variable '{foundVariable.Name}'");
+
+                        // Replace it with contents
+                        ReplaceTag(ref contents, match, await FileManager.ReadAllTextAsync(foundVariable.FilePath), removeNewline: false);
+
+                        // Flag it
+                        anyMatch = true;
+                    }
+                    else
+                        // Move to next match
+                        match = match.NextMatch();
+                }
+            }
+
+            // If we got any match, update original source file
+            if (anyMatch)
+                FileManager.SaveFile(contents, data.FullPath);
+
+            // And update unprocessed data
+            data.UnprocessedFileContents = contents;
+
+            // Return if we found any matches and so updated the file
+            return anyMatch;
+        }
 
         /// <summary>
         /// Processes the tags and finds all output tags
@@ -908,7 +1001,7 @@ namespace Dna.Web.Core
                 outputPath += OutputExtension;
 
             // Get the full path from the provided relative path based on the input files location
-            var fullPath = Path.GetFullPath(Path.Combine(data.LocalConfiguration.OutputPath, outputPath));
+            var fullPath = DnaConfiguration.ResolveFullPath(data.LocalConfiguration.OutputPath, outputPath, false, out bool wasRelative);
 
             // Add this to the list
             data.OutputPaths.Add(new FileOutputData
@@ -1069,7 +1162,7 @@ namespace Dna.Web.Core
                 // Or if we specify ! only include it if the specified profile is  blank
                 (profileName == "!" && string.IsNullOrEmpty(output.ProfileName)) ||
                 // Or if the profile name matches include it
-                string.Equals(output.ProfileName, profileName, StringComparison.CurrentCultureIgnoreCase))
+                output.ProfileName.EqualsIgnoreCase(profileName))
             {
                 // Replace the tag with the contents
                 ReplaceTag(output, match, inlineData, removeNewline: false);
@@ -1111,7 +1204,7 @@ namespace Dna.Web.Core
                 // Or if we specify ! only include it if the specified profile is  blank
                 (profileName == "!" && string.IsNullOrEmpty(output.ProfileName)) ||
                 // Or if the profile name matches include it
-                string.Equals(output.ProfileName, profileName, StringComparison.CurrentCultureIgnoreCase))
+                output.ProfileName.EqualsIgnoreCase(profileName))
             {
                 // Try and find the include file
                 var includedContents = FindIncludeFile(data.FullPath, includePath, out string resolvedPath);
@@ -1388,16 +1481,16 @@ namespace Dna.Web.Core
                 });
             }
             // Project Path
-            else if (string.Equals(variable, mDnaVariableProjectPath, StringComparison.InvariantCultureIgnoreCase))
+            else if (variable.EqualsIgnoreCase(mDnaVariableProjectPath))
             {
                 // Now try and replace the value, catching any unexpected errors
                 return TryProcessDnaVariable(data, output, match, ref contents, variable, () =>
                 {
-                    return Environment.CurrentDirectory;
+                    return System.Environment.CurrentDirectory;
                 });
             }
             // File Path
-            else if (string.Equals(variable, mDnaVariableFilePath, StringComparison.InvariantCultureIgnoreCase))
+            else if (variable.EqualsIgnoreCase(mDnaVariableFilePath))
             {
                 // Now try and replace the value, catching any unexpected errors
                 return TryProcessDnaVariable(data, output, match, ref contents, variable, () =>
@@ -1464,13 +1557,13 @@ namespace Dna.Web.Core
 
             // Resolve the name to a variable value stored in the output variables
             var variableValue = output.Variables.FirstOrDefault(v =>
-                string.Equals(v.Name, variable, StringComparison.CurrentCultureIgnoreCase) &&
-                string.Equals(v.ProfileName, output.ProfileName, StringComparison.CurrentCultureIgnoreCase));
+                v.Name.EqualsIgnoreCase(variable) &&
+                v.ProfileName.EqualsIgnoreCase(output.ProfileName));
 
             // If this was a profile-specific variable, fallback to the standard variable 
             if (variableValue == null && !string.IsNullOrEmpty(output.ProfileName))
                 variableValue = output.Variables.FirstOrDefault(v =>
-                    string.Equals(v.Name, variable, StringComparison.CurrentCultureIgnoreCase) &&
+                    v.Name.EqualsIgnoreCase(variable) &&
                     string.IsNullOrEmpty(v.ProfileName));
 
             // Error if we don't get one
@@ -1571,8 +1664,8 @@ namespace Dna.Web.Core
 
                     // Add or update variable
                     var existing = output.Variables.FirstOrDefault(f =>
-                        string.Equals(f.Name, variable.Name) &&
-                        string.Equals(f.ProfileName, variable.ProfileName));
+                        f.Name.EqualsIgnoreCase(variable.Name) &&
+                        f.ProfileName.EqualsIgnoreCase(variable.ProfileName));
 
                     // If one exists, update it
                     if (existing != null)
@@ -1632,7 +1725,7 @@ namespace Dna.Web.Core
             foreach (var file in allFiles)
             {
                 // If any match this file...
-                if (file.References.Any(reference => string.Equals(reference, includePath, StringComparison.CurrentCultureIgnoreCase)))
+                if (file.References.Any(reference => reference.EqualsIgnoreCase(includePath)))
                 {
                     // Add this file to be processed
                     toProcess.Add(file.Path);
@@ -1692,7 +1785,7 @@ namespace Dna.Web.Core
             AllMonitoredFiles.Clear();
 
             // Get all monitored files
-            var monitoredFiles = GetDirectoryFiles(Configuration.MonitorPath, "*.*")
+            var monitoredFiles = FileHelpers.GetDirectoryFiles(Configuration.MonitorPath, "*.*")
                            .Where(file => EngineExtensions.Any(ex => Regex.IsMatch(Path.GetFileName(file), ex)))
                            .ToList();
 
@@ -1705,40 +1798,6 @@ namespace Dna.Web.Core
                 // Add to list
                 AllMonitoredFiles.Add((file, references));
             }
-        }
-
-        /// <summary>
-        /// A safe way to get all the files in a directory and sub directory without crashing on UnauthorizedException or PathTooLongException
-        /// </summary>
-        /// <param name="rootPath">Starting directory</param>
-        /// <param name="patternMatch">Filename pattern match</param>
-        /// <param name="searchOption">Search subdirectories or only top level directory for files</param>
-        /// <returns>List of files</returns>
-        public static IEnumerable<string> GetDirectoryFiles(string rootPath, string patternMatch)
-        {
-            // List of found files
-            var foundFiles = Enumerable.Empty<string>();
-
-            try
-            {
-                // Get all directories in this path
-                var directories = Directory.EnumerateDirectories(rootPath);
-
-                // For each sub-directory...
-                foreach (var directory in directories)
-                    // Add files in subdirectories recursively to the list
-                    foundFiles = foundFiles.Concat(GetDirectoryFiles(directory, patternMatch));
-            }
-            // Catch the exceptions we want to ignore
-            catch (UnauthorizedAccessException) { }
-            catch (PathTooLongException) { }
-
-            // Add files from the current directory
-            try { foundFiles = foundFiles.Concat(Directory.EnumerateFiles(rootPath, patternMatch)); }
-            catch (UnauthorizedAccessException) { }
-
-            // Return results
-            return foundFiles;
         }
 
         /// <summary>
@@ -1787,8 +1846,7 @@ namespace Dna.Web.Core
                     }
 
                     // Resolve any relative aspects of the path
-                    if (!Path.IsPathRooted(includePath))
-                        includePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(filePath), includePath));
+                    includePath = DnaConfiguration.ResolveFullPath(Path.GetDirectoryName(filePath), includePath, false, out bool wasRelative);
 
                     // Try and find the include file
                     FindIncludeFile(filePath, includePath, out string resolvedPath, returnContents: false);
@@ -1824,7 +1882,7 @@ namespace Dna.Web.Core
                 return false;
 
             // Make sure this is an include
-            if (!string.Equals(match.Groups[1].Value, "include"))
+            if (!match.Groups[1].Value.EqualsIgnoreCase("include"))
                 return false;
 
             // Get include path value

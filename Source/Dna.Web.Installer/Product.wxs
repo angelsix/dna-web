@@ -7,7 +7,7 @@
     To release a new version
     
     1. Change the ProductCode for both 32 and 64bit to new GUIDs
-    2. Change Dna.Web.CommandLine Assembly Version to new version (x.x.x.y)
+    2. Change Dna.Web.Core Assembly Version to new version (x.x.x.y)
          NOTE: Updating last digit (y) won't cause old version to be removed
                Update one of the first 3 digits to trigger an upgrade/remove old version
     3. Update index.md in Dna Web GitHub Pages site to point to latest download
@@ -21,9 +21,9 @@
 
 <!-- Set a specific product code based on the processor architecture build variable -->
 <?if $(var.Platform)=x64 ?>
-<?define ProductCode = "{F0AA65E3-92B8-4678-8FB7-2DD0C7676D8D}" ?>
+<?define ProductCode = "{A7F57CF0-1791-4442-9A0A-3B173117849E}" ?>
 <?else ?>
-<?define ProductCode = "{7352EB75-8B9C-4B32-A1C1-03DA868AD602}" ?>
+<?define ProductCode = "{756437E0-BD9C-477B-9B14-11E1CB47847B}" ?>
 <?endif ?>
 <?define UpgradeCode = "{452D79DF-DD6D-4904-B047-530C37367094}" ?>
 

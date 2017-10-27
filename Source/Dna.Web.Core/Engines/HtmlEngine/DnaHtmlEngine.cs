@@ -27,7 +27,7 @@ namespace Dna.Web.Core
         public DnaHtmlEngine()
         {
             // Set input extensions
-            EngineExtensions = new List<string> { ".dhtml" };
+            EngineExtensions = new List<string> { DnaSettings.DnaWebFileExtension };
 
             // Set output extension
             OutputExtension = ".html";

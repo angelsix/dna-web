@@ -157,14 +157,14 @@ namespace Dna.Web.Core
             data.Error = string.Empty;
 
             // Get group
-            var group = propertyData.FirstOrDefault(f => string.Equals(f.Name, "group", StringComparison.CurrentCultureIgnoreCase))?.Value;
+            var group = propertyData.FirstOrDefault(f => f.Name.EqualsIgnoreCase("group"))?.Value;
 
             // Find all variables within the specific group
-            // or all variables not in a group if nonne is specified
-            var variables = output.Variables.Where(f => string.Equals(f.Group, group)).ToList();
+            // or all variables not in a group if none is specified
+            var variables = output.Variables.Where(f => f.Group.EqualsIgnoreCase(group)).ToList();
 
             // Find the indentation level
-            // Based on the number of whitespaces before the match
+            // Based on the number of whitespace's before the match
             var indentation = 0;
             var i = match.Index - 1;
             while (i > 0 && output.FileContents[i--] == ' ')

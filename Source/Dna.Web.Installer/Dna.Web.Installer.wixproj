@@ -74,7 +74,7 @@
       <LinkerBaseInputPaths>..\Dna.Web.CommandLine\bin\$(Configuration)\netcoreapp2.0\win-$(Platform)\publish</LinkerBaseInputPaths>
     </PropertyGroup>
     <!-- Get assembly version from file -->
-    <GetAssemblyIdentity AssemblyFiles="..\Dna.Web.CommandLine\bin\$(Configuration)\netcoreapp2.0\win-$(Platform)\publish\DnaWeb.dll">
+    <GetAssemblyIdentity AssemblyFiles="..\Dna.Web.CommandLine\bin\$(Configuration)\netcoreapp2.0\win-$(Platform)\publish\Dna.Web.Core.dll">
       <Output TaskParameter="Assemblies" ItemName="AssemblyVersion" />
     </GetAssemblyIdentity>
     <!-- Define constants version number and base path -->
@@ -85,7 +85,7 @@
   </Target>
   <Target Name="AfterBuild">
     <!-- Get assembly version from file -->
-    <GetAssemblyIdentity AssemblyFiles="..\Dna.Web.CommandLine\bin\$(Configuration)\netcoreapp2.0\win-$(Platform)\publish\DnaWeb.dll">
+    <GetAssemblyIdentity AssemblyFiles="..\Dna.Web.CommandLine\bin\$(Configuration)\netcoreapp2.0\win-$(Platform)\publish\Dna.Web.Core.dll">
       <Output TaskParameter="Assemblies" ItemName="AssemblyVersion" />
     </GetAssemblyIdentity>
     <!-- Rename and move final MSI to Installs folder -->

@@ -8,7 +8,7 @@ using System.Linq.Expressions;
 namespace Dna.Web.Core
 {
     /// <summary>
-    /// The configuration for a Dna Web environment
+    /// The configuration for a DnaWeb environment
     /// </summary>
     /// <remarks>
     /// To add another property:
@@ -59,6 +59,18 @@ namespace Dna.Web.Core
         [JsonProperty(PropertyName = DnaSettings.ConfigurationNameLiveServerDirectories)]
         public List<string> LiveServerDirectories { get; set; }
 
+        /// <summary>
+        /// A list of Live Data Source providers
+        /// </summary>
+        [JsonProperty(PropertyName = DnaSettings.ConfigurationNameLiveDataSources)]
+        public List<DnaConfigurationLiveDataSource> LiveDataSources { get; set; }
+
+        /// <summary>
+        /// The cache path where all cache data gets stored
+        /// </summary>
+        [JsonProperty(PropertyName = DnaSettings.ConfigurationNameCachePath)]
+        public string CachePath { get; set; }
+
         #endregion
 
         #region  Public Methods
@@ -79,6 +91,10 @@ namespace Dna.Web.Core
             CoreLogger.LogTabbed("Live Servers", (LiveServerDirectories?.Count ?? 0).ToString(), 1, type: LogType.Information);
             if (LiveServerDirectories?.Count > 0)
                 LiveServerDirectories.ForEach(directory => CoreLogger.LogTabbed(directory, string.Empty, 2, LogType.Information));
+
+            CoreLogger.LogTabbed("Live Data Sources", (LiveDataSources?.Count ?? 0).ToString(), 1, type: LogType.Information);
+            if (LiveDataSources?.Count > 0)
+                LiveDataSources.ForEach(source => CoreLogger.LogTabbed(source.ConfigurationFileSource, string.Empty, 2, LogType.Information));
 
             CoreLogger.Log("", type: LogType.Information);
         }
@@ -140,8 +156,8 @@ namespace Dna.Web.Core
             {
                 // Get file path
                 var filePath = filePaths[i];
-
-                // Default config uses current directory as relative path source
+                
+                // Default configuration uses current directory as relative path source
                 var configFolder = i == defaultConfigurationIndex ? Environment.CurrentDirectory : Path.GetDirectoryName(filePath);
 
                 // Try and load the settings
@@ -202,7 +218,19 @@ namespace Dna.Web.Core
             }
 
             // Live Server Directories
-            TryGetSetting(() => currentSettings.LiveServerDirectories, () => finalSettings.LiveServerDirectories, resolvePath: true, currentPath: currentPath);
+            TryGetSettingList(() => currentSettings.LiveServerDirectories, () => finalSettings.LiveServerDirectories, resolvePath: true, currentPath: currentPath);
+
+            // Live Data Sources
+            TryGetSettingList(
+                () => currentSettings.LiveDataSources,
+                () => finalSettings.LiveDataSources, 
+                resolvePath: true, 
+                currentPath: currentPath,
+                logDetails: (item) => item.ConfigurationFileSource
+                );
+
+            // Cache Path
+            TryGetSetting(() => currentSettings.CachePath, () => finalSettings.CachePath, resolvePath: true, currentPath: currentPath);
 
             // Space between each configuration details for console log niceness
             CoreLogger.Log("");
@@ -237,65 +265,15 @@ namespace Dna.Web.Core
 
                     if (resolvePath)
                     {
-                        // If path is unresolved...
-                        if (!Path.IsPathRooted(currentString))
-                        {
-                            // Resolve path
-                            var resolvedPath = Path.GetFullPath(Path.Combine(currentPath ?? string.Empty, currentString));
+                        // Resolve path
+                        var resolvedPath = DnaConfiguration.ResolveFullPath(currentPath ?? string.Empty, currentString, true, out bool wasRelative);
 
-                            // Set resolved path
-                            finalValueExpression.SetPropertyValue<T>(resolvedPath);
+                        // Set resolved path
+                        finalValueExpression.SetPropertyValue<T>(resolvedPath);
 
-                            // Log it
-                            CoreLogger.LogTabbed($"{propertyName} Resolved", resolvedPath, 1);
-                        }
+                        // Log it
+                        CoreLogger.LogTabbed($"{propertyName} Resolved", resolvedPath, 1);
                     }
-                }
-            }
-            else if (currentValue is List<string> currentList)
-            {
-                // We merge lists we don't replace them
-
-                // Get existing list
-                var existingList = finalValueExpression.GetPropertyValue() as List<string>;
-
-                // If it's null, create it
-                if (existingList == null)
-                    existingList = new List<string>();
-
-                // Add current values
-                if (currentList.Count > 0)
-                {
-                    // Resolve each path
-                    currentList = currentList.Select(path =>
-                    {
-                        // Resolve path if needed
-                        if (resolvePath)
-                        {
-                            // If path is unresolved...
-                            if (!Path.IsPathRooted(path))
-                                // Resolve path
-                                return Path.GetFullPath(Path.Combine(currentPath ?? string.Empty, path));
-                        }
-
-                        return path;
-                    }).ToList();
-
-                    // Find any not already in the list
-                    currentList.Where(path => !existingList.Any(existing => string.Equals(path, existing, StringComparison.InvariantCultureIgnoreCase)))
-                               .ToList()
-                               .ForEach(newItem =>
-                               {
-                                   // Log it
-                                   CoreLogger.LogTabbed(propertyName, newItem, 1);
-
-                                   // Add to list
-                                   existingList.Add(newItem);
-                               });
-
-                    // Set final setting
-                    // Making sure we have distinct items (single server per directory)
-                    finalValueExpression.SetPropertyValue<T>(existingList.Distinct().ToList());
                 }
             }
             // Otherwise, if we have a value (not null)...
@@ -307,6 +285,103 @@ namespace Dna.Web.Core
                 // Log it
                 CoreLogger.LogTabbed(propertyName, currentValue.ToString(), 1);
             }
+        }
+
+        /// <summary>
+        /// Get's the setting from the given expression and merges it with the final value expression if it is not null/default
+        /// Used when the item type being provided is a List
+        /// </summary>
+        /// <param name="currentValueExpression">The expression to get the current setting property</param>
+        /// <param name="finalValueExpression">The expression to get the final setting property</param>
+        /// <param name="resolvePath">True if the expression value is a string and the value is a path that should be resolved to absolute if it is relative</param>
+        /// <param name="currentPath">The current folder that any string path values should be resolved to absolute paths from</param>
+        /// <param name="logDetails">If provided, can return the log details for the item passed in</param>
+        private static void TryGetSettingList<T>(Expression<Func<List<T>>> currentValueExpression, Expression<Func<List<T>>> finalValueExpression, bool resolvePath = false, string currentPath = null, Func<T, string> logDetails = null)
+            where T : class
+        {
+            // Get the current value
+            var currentList = currentValueExpression.GetPropertyValue();
+
+            // Get property name (for the logs)
+            var propertyName = currentValueExpression.GetPropertyName();
+
+            // NOTE: We merge lists we don't replace them
+
+            // Get existing list
+            var existingList = finalValueExpression.GetPropertyValue() as List<T>;
+
+            // If it's null, create it
+            if (existingList == null)
+                existingList = new List<T>();
+
+            // Add current values
+            if (currentList?.Count > 0)
+            {
+                currentList.ForEach(currentItem =>
+                {
+                    // Resolve if this is a string
+                    if (currentItem is string)
+                        currentItem = ResolveFullPath(currentPath, currentItem as string, true, out bool wasRelative) as T;
+
+                    // Add to list
+                    existingList.Add(currentItem);
+
+                    // Log it
+                    // Use LogDetails callback if provided
+                    // If not check if item is a string
+                    // Failing that just log "New Item"
+                    var detail = logDetails != null ? logDetails(currentItem) : (currentItem is string ? currentItem as string : "New Item");
+                    CoreLogger.LogTabbed(propertyName, detail, 1);
+                });
+
+                // Set final setting
+                //
+                //   NOTE: If list is of classes, and the class implements IEquatible<T>
+                //         then this distinct will work for filtering out duplicates
+                //
+                //         Native values like string lists should automatically match
+                //         with hash codes and work
+                //
+                finalValueExpression.SetPropertyValue<List<T>>(existingList.Distinct().ToList());
+            }
+        }
+
+        #endregion
+
+        #region Public Helpers
+
+        /// <summary>
+        /// Resolves a path to an absolute path, replacing special variables like %LOCALAPPDATA% and %VERSION% (DnaWeb version)
+        /// </summary>
+        /// <param name="currentDirectory">The current directory to add if the path is relative</param>
+        /// <param name="path">The path to resolve to an absolute path</param>
+        /// <param name="replaceSpecialVariables">True to replace special variables with their values</param>
+        /// <param name="wasRelative">True if this path was relative and has been resolved</param>
+        /// <returns></returns>
+        public static string ResolveFullPath(string currentDirectory, string path, bool replaceSpecialVariables, out bool wasRelative)
+        {
+            // Initially relative
+            wasRelative = true;
+
+            // Replace any special variables
+            if (replaceSpecialVariables)
+            {
+                // Local App Data folder
+                path = path.Replace("%LOCALAPPDATA%", Environment.GetEnvironmentVariable("LocalAppData"));
+
+                // DnaWeb version
+                path = path.Replace("%VERSION%", DnaSettings.Version.ToString());
+            }
+
+            if (!Path.IsPathRooted(path))
+                // Return absolute path
+                return Path.GetFullPath(Path.Combine(currentDirectory ?? string.Empty, path));
+
+            // Flag this was not relative
+            wasRelative = false;
+
+            // Return path as it's already absolute
+            return path;
         }
 
         #endregion

@@ -393,7 +393,7 @@ window.onload = checkForChanges;";
         private void Process(HttpListenerContext context)
         {
             // Log it
-            CoreLogger.Log($"LiveServer Processing request {context.Request.Url.OriginalString}...", type: LogType.Attention);
+            CoreLogger.Log($"LiveServer Processing request {context.Request.Url.OriginalString}...");
 
             // Get the URL information after the hostname
             // i.e. http://localhost:8080/ would be /

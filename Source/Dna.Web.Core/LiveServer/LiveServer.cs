@@ -44,7 +44,7 @@ namespace Dna.Web.Core
         /// <summary>
         /// The reset event that gets set when contents observed in the <see cref="ServingDirectory"/> change
         /// </summary>
-        protected AutoResetEvent mContentChangedResetEvent = new AutoResetEvent(false);
+        protected ManualResetEvent mContentChangedResetEvent = new ManualResetEvent(false);
 
         /// <summary>
         /// The special URL that requests the auto-reload script
@@ -196,6 +196,7 @@ window.onload = checkForChanges;";
 
                 // Set it so any blocked calls pass on
                 mContentChangedResetEvent.Set();
+                mContentChangedResetEvent.Reset();
 
                 // Flag that we are no longer listening
                 while (Listening)
@@ -336,8 +337,11 @@ window.onload = checkForChanges;";
                 lowerString.EndsWith(".gif") ||
                 lowerString.EndsWith(".jpg") ||
                 lowerString.EndsWith(".jpeg"))
+            {
                 // Let listeners know
                 mContentChangedResetEvent.Set();
+                mContentChangedResetEvent.Reset();
+            }
         }
 
         /// <summary>
@@ -473,6 +477,9 @@ window.onload = checkForChanges;";
         {
             Task.Run(() =>
             {
+                // Log it
+                CoreLogger.Log("Waiting for file change signal...");
+
                 // Wait here until files change
                 mContentChangedResetEvent.WaitOne();
 

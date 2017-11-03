@@ -492,18 +492,6 @@ namespace Dna.Web.Core
                         // Get variable name from filename
                         var variableName = Path.GetFileNameWithoutExtension(variablePath);
 
-                        // Name cannot have a . in it (we use it to separate prefix)
-                        if (variableName.Contains('.'))
-                        {
-                            // Log it
-                            if (log)
-                                CoreLogger.Log($"LiveData: Variable cannot have . in the name {config}.", type: LogType.Error);
-
-                            // Delete source if cached
-                            if (isCached)
-                                DeleteSource(liveDataSource.CachedFilePath, log: log);
-                        }
-
                         // See if we have another variable with same name
                         var existingVariable = liveDataSource.Variables.FirstOrDefault(f => f.Name.EqualsIgnoreCase(variableName));
 
@@ -544,18 +532,6 @@ namespace Dna.Web.Core
                     {
                         // Get template name from filename
                         var templateName = Path.GetFileNameWithoutExtension(templatePath);
-
-                        // Name cannot have a . in it (we use it to separate prefix)
-                        if (templateName.Contains('.'))
-                        {
-                            // Log it
-                            if (log)
-                                CoreLogger.Log($"LiveData: Template cannot have . in the name {config}.", type: LogType.Error);
-
-                            // Delete source if cached
-                            if (isCached)
-                                DeleteSource(liveDataSource.CachedFilePath, log: log);
-                        }
 
                         // See if we have another template with same name
                         var existingTemplate = liveDataSource.Templates.FirstOrDefault(f => f.Name.EqualsIgnoreCase(templateName));
@@ -698,10 +674,12 @@ namespace Dna.Web.Core
         /// <returns></returns>
         public LiveDataSourceVariable FindVariable(string name)
         {
-            // If there is no dot in the name...
-            if (!name.Contains('.'))
-                // Add default prefix
-                name = $"{DnaSettings.LiveDataDefaultPrefix}.{name}";
+            // If there is no known prefix...
+            if (name.IndexOf('.') <= 0 ||
+                // Or the text before the first . is not a known prefix....
+                Sources?.Any(source => source.Prefix.EqualsIgnoreCase(name.Substring(0, name.IndexOf('.')))) != true)
+                    // Add default prefix
+                    name = $"{DnaSettings.LiveDataDefaultPrefix}.{name}";
 
             // Get a variable that has the matching prefix.name
             var foundVariable = Sources?.Where(source => source.Variables.Any(variable => $"{source.Prefix}.{variable.Name}".EqualsIgnoreCase(name)))
@@ -719,8 +697,10 @@ namespace Dna.Web.Core
         /// <returns></returns>
         public LiveDataSourceTemplate FindTemplate(string name)
         {
-            // If there is no dot in the name...
-            if (!name.Contains('.'))
+            // If there is no known prefix...
+            if (name.IndexOf('.') <= 0 ||
+                // Or the text before the first . is not a known prefix....
+                Sources?.Any(source => source.Prefix.EqualsIgnoreCase(name.Substring(0, name.IndexOf('.')))) != true)
                 // Add default prefix
                 name = $"{DnaSettings.LiveDataDefaultPrefix}.{name}";
 

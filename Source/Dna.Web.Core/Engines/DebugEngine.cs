@@ -18,7 +18,7 @@ namespace Dna.Web.Core
             LogMessage += (message) =>
             {
                 // Log message
-                message.Write(Configuration.LogLevel ?? LogLevel.All);
+                message.Write(DnaEnvironment?.Configuration.LogLevel ?? LogLevel.All);
             };
         }
 

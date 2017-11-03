@@ -173,39 +173,36 @@ window.onload = checkForChanges;";
             CoreLogger.Log($"LiveServer '{ServingDirectory}' stopping...", type: LogType.Warning);
 
             // Lock call
-            await AsyncAwaitor.AwaitAsync(mStopLock, () =>
+            await AsyncAwaitor.AwaitAsync(mStopLock, async () =>
             {
-                return Task.Run(async () =>
+                try
                 {
-                    try
-                    {
-                        // Stop listener
-                        mListener.Stop();
-                    }
-                    catch (Exception ex)
-                    {
-                        // Log it
-                        Debugger.Break();
-                        CoreLogger.Log($"Failed to stop LiveServer listener. {ex.Message}", type: LogType.Warning);
-                    }
-
-                    // Set stopping flag to true
-                    Stopping = true;
-
-                    // Dispose folder watcher
-                    mFolderWatcher?.Dispose();
-                    mFolderWatcher = null;
-
-                    // Set it so any blocked calls pass on
-                    mContentChangedResetEvent.Set();
-
-                    // Flag that we are no longer listening
-                    while (Listening)
-                        await Task.Delay(100);
-
+                    // Stop listener
+                    mListener.Stop();
+                }
+                catch (Exception ex)
+                {
                     // Log it
-                    CoreLogger.Log($"LiveServer {ServingDirectory} stopped", type: LogType.Attention);
-                });
+                    Debugger.Break();
+                    CoreLogger.Log($"Failed to stop LiveServer listener. {ex.Message}", type: LogType.Warning);
+                }
+
+                // Set stopping flag to true
+                Stopping = true;
+
+                // Dispose folder watcher
+                mFolderWatcher?.Dispose();
+                mFolderWatcher = null;
+
+                // Set it so any blocked calls pass on
+                mContentChangedResetEvent.Set();
+
+                // Flag that we are no longer listening
+                while (Listening)
+                    await Task.Delay(100);
+
+                // Log it
+                CoreLogger.Log($"LiveServer {ServingDirectory} stopped", type: LogType.Attention);
             });
         }
 

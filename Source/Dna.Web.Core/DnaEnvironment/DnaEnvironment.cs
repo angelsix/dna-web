@@ -14,6 +14,20 @@ namespace Dna.Web.Core
     /// </summary>
     public class DnaEnvironment
     {
+        #region Protected Members
+
+        /// <summary>
+        /// A lock for loading the DnaWeb Configuration information
+        /// </summary>
+        protected object mConfigurationLoadLock = new object();
+
+        /// <summary>
+        /// A lock for running any commands after a configuration change
+        /// </summary>
+        protected object mPostConfigurationChangeLock = new object();
+
+        #endregion
+
         #region Public Properties
 
         /// <summary>
@@ -41,6 +55,11 @@ namespace Dna.Web.Core
         /// </summary>
         public bool DisableWatching { get; set; }
 
+        /// <summary>
+        /// All engines running in this environment
+        /// </summary>
+        public List<BaseEngine> Engines { get; set; } = new List<BaseEngine>();
+
         #endregion
 
         #region Constructor
@@ -67,240 +86,57 @@ namespace Dna.Web.Core
             CoreLogger.Log($"Current Directory: {EnvironmentDirectory}");
             CoreLogger.Log("");
 
-            #region Argument Variables
+            #region Load Configuration
 
-            // Get a specific configuration path override
-            var specificConfigurationFile = DnaSettings.SpecificConfigurationFilePath;
+            // Load all dna.config files based on 
+            LoadConfigurations(commandLineArguments);
 
-
-            // Read in arguments
-            if (commandLineArguments != null)
-                foreach (var arg in commandLineArguments)
-                {
-                    // Override specific configuration file
-                    if (arg.StartsWith("config="))
-                        specificConfigurationFile = arg.Substring(arg.IndexOf("=") + 1);
-                }
-
-            #endregion
-
-            #region Read Configuration Files
-
-            // Load configuration files
-            Configuration = DnaConfiguration.LoadFromFiles(new[] { DnaSettings.DefaultConfigurationFilePath, specificConfigurationFile }, null, defaultConfigurationIndex: 0);
-
-            #endregion
-
-            #region Configuration Argument Variables
-
-            // Read in arguments
-            var overrides = false;
-
-            if (commandLineArguments != null)
-                foreach (var arg in commandLineArguments)
-                {
-                    // Process and Close
-                    if (arg == "/c")
-                    {
-                        // Don't wait (just open, process, close)
-                        Configuration.ProcessAndClose = true;
-
-                        // Log it
-                        CoreLogger.LogTabbed("Argument Override ProcessAndClose", Configuration.ProcessAndClose.ToString(), 1);
-
-                        // Flag so we know to add newline to console log after this
-                        overrides = true;
-                    }
-                    // Generate All
-                    else if (arg == "/a")
-                    {
-                        // Generate all files on start
-                        Configuration.GenerateOnStart = GenerateOption.All;
-
-                        // Log it
-                        CoreLogger.LogTabbed("Argument Override GenerateOnStart", Configuration.GenerateOnStart.ToString(), 1);
-
-                        // Flag so we know to add newline to console log after this
-                        overrides = true;
-                    }
-                    // Monitor Path
-                    else if (arg.StartsWith("monitor="))
-                    {
-                        // Set monitor path
-                        Configuration.MonitorPath = arg.Substring(arg.IndexOf("=") + 1);
-
-                        // Resolve monitor path
-                        var unresolvedPath = Configuration.MonitorPath;
-
-                        // Resolve any relative paths
-                        Configuration.MonitorPath = DnaConfiguration.ResolveFullPath(EnvironmentDirectory, unresolvedPath, false, out bool wasRelative);
-
-                        // Log it
-                        CoreLogger.LogTabbed("Argument Override MonitorPath", Configuration.MonitorPath, 1);
-
-                        // Flag so we know to add newline to console log after this
-                        overrides = true;
-                    }
-                    // Log Level
-                    else if (arg.StartsWith("logLevel="))
-                    {
-                        // Try get value
-                        if (Enum.TryParse<LogLevel>(arg.Substring(arg.IndexOf("=") + 1), out LogLevel result))
-                        {
-                            // Set new value
-                            Configuration.LogLevel = result;
-
-                            // Log it
-                            CoreLogger.LogTabbed("Argument Override Log Level", Configuration.LogLevel.ToString(), 1);
-
-                            // Flag so we know to add newline to console log after this
-                            overrides = true;
-                        }
-                    }
-                    // Html Path
-                    else if (arg.StartsWith("outputPath="))
-                    {
-                        // Set path (and resolve if relative)
-                        var unresolvedPath = arg.Substring(arg.IndexOf("=") + 1);
-                        Configuration.OutputPath = DnaConfiguration.ResolveFullPath(EnvironmentDirectory, unresolvedPath, true, out bool wasRelative);
-
-                        // Log it
-                        CoreLogger.LogTabbed("Argument Override Output Path", Configuration.OutputPath, 1);
-
-                        // Flag so we know to add newline to console log after this
-                        overrides = true;
-                    }
-                    // Cache Path
-                    else if (arg.StartsWith("cachePath="))
-                    {
-                        // Set Path (and resolve if relative)
-                        var unresolvedPath = arg.Substring(arg.IndexOf("=") + 1);
-                        Configuration.CachePath = DnaConfiguration.ResolveFullPath(EnvironmentDirectory, unresolvedPath, true, out bool wasRelative);
-
-                        // Log it
-                        CoreLogger.LogTabbed("Argument Override Cache Path", Configuration.CachePath, 1);
-
-                        // Flag so we know to add newline to console log after this
-                        overrides = true;
-                    }
-                }
-
-            // Add newline if there are any argument overrides for console log niceness
-            if (overrides)
-                CoreLogger.Log("");
-
-            #endregion
-
-            #region Load Local Configuration Loop
-
-            // Last loaded monitor path
-            string lastMonitorPath;
-
-            // Load the configuration in the monitor path
-            do
+            // Monitor for configuration file changes and reload configurations
+            var monitorFolderWatcher = new FolderWatcher
             {
-                lastMonitorPath = Configuration.MonitorPath;
+                // Listen out for configuration file changes
+                Filter = DnaSettings.ConfigurationFileName,
+                Path = Configuration.MonitorPath,
+                UpdateDelay = 300
+            };
 
-                // Load configuration file from monitor directory
-                Configuration = DnaConfiguration.LoadFromFiles(new[] { Path.Combine(Configuration.MonitorPath, DnaSettings.ConfigurationFileName) }, null, Configuration);
-            }
-            // Looping until it no longer changes
-            while (!lastMonitorPath.EqualsIgnoreCase(Configuration.MonitorPath));
+            // Listen for configuration file changes
+            monitorFolderWatcher.FileChanged += async (path) =>
+            {
+                // Reload configurations
+                LoadConfigurations(commandLineArguments);
 
-            #endregion
+                // Run anything that should run each time the configuration changes
+                await PostConfigurationMethods();
+            };
 
-            #region Merge Global Settings (from all dna.config files anywhere in project)
-
-            // Search the monitor folder now for all configuration files
-            var allConfigurationFiles = FileHelpers.GetDirectoryFiles(Configuration.MonitorPath, DnaSettings.ConfigurationFileName).ToArray();
-
-            // Merge all global settings from the configurations (like Live Servers and Live Data Sources)
-            Configuration = DnaConfiguration.LoadFromFiles(allConfigurationFiles, null, Configuration, globalSettingsOnly: true);
-
-            #endregion
-
-            #region Output Final Configuration / App Details
-
-            // Log final configuration
-            Configuration.LogFinalConfiguration();
-
-            // Log the version
-            LogVersion();
-            CoreLogger.Log("", type: LogType.Information);
+            // Start watcher
+            monitorFolderWatcher.Start();
 
             #endregion
 
             #region Create Engines
 
             // Create engines
-            var engines = new List<BaseEngine> { new DnaHtmlEngine(), new DnaCSharpEngine(), new DnaSassEngine() };
-
+            Engines.Add(new DnaHtmlEngine());
+            Engines.Add(new DnaCSharpEngine());
+            Engines.Add(new DnaSassEngine());
+            
             // Configure them
-            engines.ForEach(engine =>
+            Engines.ForEach(engine =>
             {
                 // Set configuration
-                engine.Configuration = Configuration;
                 engine.DnaEnvironment = this;
             });
 
             // Spin them up
-            foreach (var engine in engines)
+            foreach (var engine in Engines)
                 engine.Start();
 
-            // Set the core logger log level to match settings now
-            CoreLogger.LogLevel = Configuration.LogLevel ?? LogLevel.All;
-
-            // Now do startup generation
-            foreach (var engine in engines)
-                await engine.StartupGenerationAsync();
-
             #endregion
 
-            #region Live Servers
-
-            CoreLogger.Log("", type: LogType.Information);
-
-            // Delay after first open to allow browser to open up 
-            // so consecutive opens show in new tabs not new instances
-            var firstOpen = true;
-
-            if (Configuration.LiveServerDirectories != null)
-            {
-                foreach (var directory in Configuration.LiveServerDirectories)
-                {
-                    // Spin up listener
-                    var listenUrl = LiveServerManager.CreateLiveServer(directory);
-
-                    // Open up the listen URL
-                    if (!string.IsNullOrEmpty(listenUrl))
-                    {
-                        // Open browser
-                        OpenBrowser(listenUrl);
-
-                        // Wait if first time
-                        if (firstOpen)
-                            await Task.Delay(500);
-
-                        // No longer first open
-                        firstOpen = false;
-                    }
-                }
-            }
-
-            #endregion
-
-            #region Live Data
-
-            // Update cache path for Live Data Manager
-            LiveDataManager.CachePath = Path.Combine(Configuration.CachePath, DnaSettings.CacheSubFolderLiveData);
-
-            // Refresh local sources
-            LiveDataManager.RefreshLocalSources(Configuration.LiveDataSources);
-
-            // Download any out-of-date / unprocessed live sources
-            LiveDataManager.DownloadSourcesAsync(Configuration.LiveDataSources);
-
-            #endregion
+            // Run anything that should run each time the configuration changes
+            await PostConfigurationMethods();
 
             #region Process Commands
 
@@ -338,8 +174,11 @@ namespace Dna.Web.Core
 
             #region Cleanup
 
+            // Clean up folder watcher
+            monitorFolderWatcher.Dispose();
+
             // Clean up engines
-            engines.ForEach(engine => engine.Dispose());
+            Engines.ForEach(engine => engine.Dispose());
 
             // Stop live servers
             await LiveServerManager.StopAsync();
@@ -352,6 +191,249 @@ namespace Dna.Web.Core
             }
 
             #endregion
+        }
+
+        /// <summary>
+        /// Loads all configurations from the monitor path and forms a combined final configuration
+        /// </summary>
+        /// <param name="commandLineArguments">Any command line arguments</param>
+        public void LoadConfigurations(string[] commandLineArguments = null)
+        {
+            lock (mConfigurationLoadLock)
+            {
+                #region Argument Variables
+
+                // Get a specific configuration path override
+                var specificConfigurationFile = DnaSettings.SpecificConfigurationFilePath;
+
+                // Read in arguments
+                if (commandLineArguments != null)
+                    foreach (var arg in commandLineArguments)
+                    {
+                        // Override specific configuration file
+                        if (arg.StartsWith("config="))
+                            specificConfigurationFile = arg.Substring(arg.IndexOf("=") + 1);
+                    }
+
+                #endregion
+
+                #region Read Configuration Files
+
+                // Load configuration files
+                Configuration = DnaConfiguration.LoadFromFiles(new[] { DnaSettings.DefaultConfigurationFilePath, specificConfigurationFile }, null, defaultConfigurationIndex: 0);
+
+                #endregion
+
+                #region Configuration Argument Variables
+
+                // Read in arguments
+                var overrides = false;
+
+                if (commandLineArguments != null)
+                    foreach (var arg in commandLineArguments)
+                    {
+                        // Process and Close
+                        if (arg == "/c")
+                        {
+                            // Don't wait (just open, process, close)
+                            Configuration.ProcessAndClose = true;
+
+                            // Log it
+                            CoreLogger.LogTabbed("Argument Override ProcessAndClose", Configuration.ProcessAndClose.ToString(), 1);
+
+                            // Flag so we know to add newline to console log after this
+                            overrides = true;
+                        }
+                        // Generate All
+                        else if (arg == "/a")
+                        {
+                            // Generate all files on start
+                            Configuration.GenerateOnStart = GenerateOption.All;
+
+                            // Log it
+                            CoreLogger.LogTabbed("Argument Override GenerateOnStart", Configuration.GenerateOnStart.ToString(), 1);
+
+                            // Flag so we know to add newline to console log after this
+                            overrides = true;
+                        }
+                        // Monitor Path
+                        else if (arg.StartsWith("monitor="))
+                        {
+                            // Set monitor path
+                            Configuration.MonitorPath = arg.Substring(arg.IndexOf("=") + 1);
+
+                            // Resolve monitor path
+                            var unresolvedPath = Configuration.MonitorPath;
+
+                            // Resolve any relative paths
+                            Configuration.MonitorPath = DnaConfiguration.ResolveFullPath(EnvironmentDirectory, unresolvedPath, false, out bool wasRelative);
+
+                            // Log it
+                            CoreLogger.LogTabbed("Argument Override MonitorPath", Configuration.MonitorPath, 1);
+
+                            // Flag so we know to add newline to console log after this
+                            overrides = true;
+                        }
+                        // Log Level
+                        else if (arg.StartsWith("logLevel="))
+                        {
+                            // Try get value
+                            if (Enum.TryParse<LogLevel>(arg.Substring(arg.IndexOf("=") + 1), out LogLevel result))
+                            {
+                                // Set new value
+                                Configuration.LogLevel = result;
+
+                                // Log it
+                                CoreLogger.LogTabbed("Argument Override Log Level", Configuration.LogLevel.ToString(), 1);
+
+                                // Flag so we know to add newline to console log after this
+                                overrides = true;
+                            }
+                        }
+                        // Html Path
+                        else if (arg.StartsWith("outputPath="))
+                        {
+                            // Set path (and resolve if relative)
+                            var unresolvedPath = arg.Substring(arg.IndexOf("=") + 1);
+                            Configuration.OutputPath = DnaConfiguration.ResolveFullPath(EnvironmentDirectory, unresolvedPath, true, out bool wasRelative);
+
+                            // Log it
+                            CoreLogger.LogTabbed("Argument Override Output Path", Configuration.OutputPath, 1);
+
+                            // Flag so we know to add newline to console log after this
+                            overrides = true;
+                        }
+                        // Cache Path
+                        else if (arg.StartsWith("cachePath="))
+                        {
+                            // Set Path (and resolve if relative)
+                            var unresolvedPath = arg.Substring(arg.IndexOf("=") + 1);
+                            Configuration.CachePath = DnaConfiguration.ResolveFullPath(EnvironmentDirectory, unresolvedPath, true, out bool wasRelative);
+
+                            // Log it
+                            CoreLogger.LogTabbed("Argument Override Cache Path", Configuration.CachePath, 1);
+
+                            // Flag so we know to add newline to console log after this
+                            overrides = true;
+                        }
+                    }
+
+                // Add newline if there are any argument overrides for console log niceness
+                if (overrides)
+                    CoreLogger.Log("");
+
+                #endregion
+
+                #region Load Local Configuration Loop
+
+                // Last loaded monitor path
+                string lastMonitorPath;
+
+                // Load the configuration in the monitor path
+                do
+                {
+                    lastMonitorPath = Configuration.MonitorPath;
+
+                    // Load configuration file from monitor directory
+                    Configuration = DnaConfiguration.LoadFromFiles(new[] { Path.Combine(Configuration.MonitorPath, DnaSettings.ConfigurationFileName) }, null, Configuration);
+                }
+                // Looping until it no longer changes
+                while (!lastMonitorPath.EqualsIgnoreCase(Configuration.MonitorPath));
+
+                #endregion
+
+                #region Merge Global Settings (from all dna.config files anywhere in project)
+
+                // Search the monitor folder now for all configuration files
+                var allConfigurationFiles = FileHelpers.GetDirectoryFiles(Configuration.MonitorPath, DnaSettings.ConfigurationFileName).ToArray();
+
+                // Merge all global settings from the configurations (like Live Servers and Live Data Sources)
+                Configuration = DnaConfiguration.LoadFromFiles(allConfigurationFiles, null, Configuration, globalSettingsOnly: true);
+
+                #endregion
+
+                #region Output Final Configuration / App Details
+
+                // Log final configuration
+                Configuration.LogFinalConfiguration();
+
+                // Log the version
+                LogVersion();
+                CoreLogger.Log("", type: LogType.Information);
+
+                #endregion
+            }
+        }
+
+        /// <summary>
+        /// Runs any methods that should run after a configuration change
+        /// such as starting Live Servers, downloading Live Data sources etc...
+        /// </summary>
+        /// <returns></returns>
+        public Task PostConfigurationMethods()
+        {
+            // Lock the call
+            return AsyncAwaitor.AwaitAsync(nameof(mPostConfigurationChangeLock), async () =>
+            {
+                // Set the core logger log level to match settings now
+                CoreLogger.LogLevel = Configuration.LogLevel ?? LogLevel.All;
+
+                // Now do startup generation
+                foreach (var engine in Engines)
+                    await engine.StartupGenerationAsync();
+
+                #region Live Servers
+
+                // Stop any previous servers
+                await LiveServerManager.StopAsync();
+
+                // Space for new log output
+                CoreLogger.Log("", type: LogType.Information);
+
+                // Delay after first open to allow browser to open up 
+                // so consecutive opens show in new tabs not new instances
+                var firstOpen = true;
+
+                if (Configuration.LiveServerDirectories != null)
+                {
+                    foreach (var directory in Configuration.LiveServerDirectories)
+                    {
+                        // Spin up listener
+                        var listenUrl = LiveServerManager.CreateLiveServer(directory);
+
+                        // Open up the listen URL
+                        if (!string.IsNullOrEmpty(listenUrl))
+                        {
+                            // Open browser
+                            OpenBrowser(listenUrl);
+
+                            // Wait if first time
+                            if (firstOpen)
+                                await Task.Delay(500);
+
+                            // No longer first open
+                            firstOpen = false;
+                        }
+                    }
+                }
+
+                #endregion
+
+                #region Live Data
+
+                // Update cache path for Live Data Manager
+                LiveDataManager.CachePath = Path.Combine(Configuration.CachePath, DnaSettings.CacheSubFolderLiveData);
+
+                // Refresh local sources
+                LiveDataManager.RefreshLocalSources(Configuration.LiveDataSources);
+
+                // Download any out-of-date / unprocessed live sources
+                LiveDataManager.DownloadSourcesAsync(Configuration.LiveDataSources);
+
+                #endregion
+
+                CoreLogger.LogInformation("Command: ", newLine: false, faded: true);
+            });
         }
 
         /// <summary>
@@ -540,7 +622,7 @@ namespace Dna.Web.Core
             if (foundVariable == null)
             {
                 // Log it
-                CoreLogger.Log($"Live variable not found '{variableName}'");
+                CoreLogger.Log($"Live variable not found '{variableName}'", type: LogType.Warning);
 
                 // Stop
                 return;

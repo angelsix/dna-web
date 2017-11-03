@@ -102,11 +102,6 @@ namespace Dna.Web.Core
         public abstract string EngineName { get; }
 
         /// <summary>
-        /// The configuration to use for this engine
-        /// </summary>
-        public DnaConfiguration Configuration { get; set; }
-
-        /// <summary>
         /// The DnaWeb Environment this engine is running inside of
         /// </summary>
         public DnaEnvironment DnaEnvironment { get; set; }
@@ -547,7 +542,7 @@ namespace Dna.Web.Core
                 var configurationSearchPaths = GetConfigurationSearchPaths(filePath);
 
                 // Resolve the configuration settings
-                processedConfiguration = DnaConfiguration.LoadFromFiles(configurationSearchPaths, Path.GetDirectoryName(filePath), Configuration);
+                processedConfiguration = DnaConfiguration.LoadFromFiles(configurationSearchPaths, Path.GetDirectoryName(filePath), DnaEnvironment?.Configuration);
 
                 // Add this to the cached list
                 processedConfigurations.Add(processedConfigurationPath, processedConfiguration);
@@ -568,7 +563,7 @@ namespace Dna.Web.Core
             var currentDirectory = DnaConfiguration.ResolveFullPath(string.Empty, Path.GetDirectoryName(path), false, out bool wasRelative);
 
             // If this path is not within the monitor path (somehow?) then just return this folder
-            if (!currentDirectory.StartsWith(Configuration.MonitorPath))
+            if (!currentDirectory.StartsWith(DnaEnvironment?.Configuration.MonitorPath))
             {
                 // Break for developer as this is unusual
                 Debugger.Break();
@@ -583,7 +578,7 @@ namespace Dna.Web.Core
                 var configurationFiles = new List<string>();
 
                 // Get all directories until we hit the monitor path
-                while (currentDirectory != Configuration.MonitorPath)
+                while (currentDirectory != DnaEnvironment?.Configuration.MonitorPath)
                 {
                     // Add the current folders configuration file
                     configurationFiles.Add(Path.Combine(currentDirectory, DnaSettings.ConfigurationFileName));
@@ -628,7 +623,7 @@ namespace Dna.Web.Core
             Started();
 
             // Log the message
-            Log($"Listening to '{Configuration.MonitorPath}'...", type: LogType.Information);
+            Log($"Listening to '{DnaEnvironment?.Configuration.MonitorPath}'...", type: LogType.Information);
             LogTabbed($"Delay", $"{ProcessDelay}ms", 1);
 
             // Create a new list of watchers
@@ -638,7 +633,7 @@ namespace Dna.Web.Core
             EngineExtensions.ForEach(extension => mWatchers.Add(new FolderWatcher
             {
                 Filter = "*" + extension,
-                Path = Configuration.MonitorPath,
+                Path = DnaEnvironment?.Configuration.MonitorPath,
                 UpdateDelay = ProcessDelay
             }));
 
@@ -668,7 +663,7 @@ namespace Dna.Web.Core
         public async Task StartupGenerationAsync()
         {
             // If there is nothing to do, just return
-            if (Configuration.GenerateOnStart == GenerateOption.None)
+            if (DnaEnvironment?.Configuration.GenerateOnStart == GenerateOption.None)
                 return;
 
             // Find all paths
@@ -1295,7 +1290,7 @@ namespace Dna.Web.Core
         /// and returns the contents of it if found. 
         /// Returns null if not found
         /// </summary>
-        /// <param name="path">The input path of the orignal file</param>
+        /// <param name="path">The input path of the original file</param>
         /// <param name="includePath">The include path of the file trying to be included</param>
         /// <param name="resolvedPath">The resolved full path of the file that was found to be included</param>
         /// <param name="returnContents">True to return the files actual contents, false to return an empty string if found and null otherwise</param>
@@ -1308,32 +1303,62 @@ namespace Dna.Web.Core
             // First look in the same folder
             var foundPath = Path.Combine(Path.GetDirectoryName(path), includePath);
 
-            // Add file extension if none specified and this engine only looks for one extension type
-            if (EngineExtensions.Count == 1 && !foundPath.EndsWith(EngineExtensions[0]) && EngineExtensions[0] != ".*")
-                foundPath = foundPath + EngineExtensions[0];
+            // For each known extension in the environment...
+            var allExtensions = DnaEnvironment?.Engines?
+                                    // Get each engines extensions
+                                    .Select((engine) => engine.EngineExtensions)
+                                    .Aggregate((a, b) =>
+                                    {
+                                        // New combined list
+                                        var combined = new List<string>();
 
-            // If we found it, return contents
-            if (FileManager.FileExists(foundPath))
+                                        // Combine list a
+                                        if (a?.Count > 0)
+                                            combined.AddRange(a);
+
+                                        // Combine list b
+                                        if (b?.Count > 0)
+                                            combined.AddRange(b);
+
+                                        // Return combined list
+                                        return combined;
+                                    })
+                                    // Convert to list
+                                    .ToList();
+
+            // Loop each known extension...
+            foreach (var extension in allExtensions)
             {
-                // Set the resolved path
-                resolvedPath = foundPath;
+                // New variable for expected path
+                var newPath = foundPath;
 
-                // Return the contents
-                return returnContents ? File.ReadAllText(foundPath) : string.Empty;
-            }
+                // Add file extension if none specified and this engine only looks for one extension type
+                if (!Path.HasExtension(newPath) && EngineExtensions.Count == 1 && extension != ".*")
+                    newPath = newPath + extension;
 
-            // Try file with an underscore if it doesn't start with it (as partial files can start with _)
-            if (Path.GetFileName(foundPath)[0] != '_')
-                foundPath = Path.Combine(Path.GetDirectoryName(foundPath), "_" + Path.GetFileName(foundPath));
+                // If we found it, return contents
+                if (FileManager.FileExists(newPath))
+                {
+                    // Set the resolved path
+                    resolvedPath = newPath;
 
-            // If we found it, return contents
-            if (FileManager.FileExists(foundPath))
-            {
-                // Set the resolved path
-                resolvedPath = foundPath;
+                    // Return the contents
+                    return returnContents ? File.ReadAllText(newPath) : string.Empty;
+                }
 
-                // Return the contents
-                return returnContents ? File.ReadAllText(foundPath) : string.Empty;
+                // Try file with an underscore if it doesn't start with it (as partial files can start with _)
+                if (Path.GetFileName(newPath)[0] != '_')
+                    newPath = Path.Combine(Path.GetDirectoryName(newPath), "_" + Path.GetFileName(newPath));
+
+                // If we found it, return contents
+                if (FileManager.FileExists(newPath))
+                {
+                    // Set the resolved path
+                    resolvedPath = newPath;
+
+                    // Return the contents
+                    return returnContents ? File.ReadAllText(newPath) : string.Empty;
+                }
             }
 
             // Not found
@@ -1785,7 +1810,7 @@ namespace Dna.Web.Core
             AllMonitoredFiles.Clear();
 
             // Get all monitored files
-            var monitoredFiles = FileHelpers.GetDirectoryFiles(Configuration.MonitorPath, "*.*")
+            var monitoredFiles = FileHelpers.GetDirectoryFiles(DnaEnvironment?.Configuration.MonitorPath, "*.*")
                            .Where(file => EngineExtensions.Any(ex => Regex.IsMatch(Path.GetFileName(file), ex)))
                            .ToList();
 

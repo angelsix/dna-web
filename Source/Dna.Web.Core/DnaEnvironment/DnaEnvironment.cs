@@ -382,42 +382,46 @@ namespace Dna.Web.Core
                 foreach (var engine in Engines)
                     await engine.StartupGenerationAsync();
 
-                #region Live Servers
-
-                // Stop any previous servers
-                await LiveServerManager.StopAsync();
-
-                // Space for new log output
-                CoreLogger.Log("", type: LogType.Information);
-
-                // Delay after first open to allow browser to open up 
-                // so consecutive opens show in new tabs not new instances
-                var firstOpen = true;
-
-                if (Configuration.LiveServerDirectories != null)
+                // If we are staying open...
+                if (Configuration.ProcessAndClose != true)
                 {
-                    foreach (var directory in Configuration.LiveServerDirectories)
+                    #region Live Servers
+
+                    // Stop any previous servers
+                    await LiveServerManager.StopAsync();
+
+                    // Space for new log output
+                    CoreLogger.Log("", type: LogType.Information);
+
+                    // Delay after first open to allow browser to open up 
+                    // so consecutive opens show in new tabs not new instances
+                    var firstOpen = true;
+
+                    if (Configuration.LiveServerDirectories != null)
                     {
-                        // Spin up listener
-                        var listenUrl = LiveServerManager.CreateLiveServer(directory);
-
-                        // Open up the listen URL
-                        if (!string.IsNullOrEmpty(listenUrl))
+                        foreach (var directory in Configuration.LiveServerDirectories)
                         {
-                            // Open browser
-                            OpenBrowser(listenUrl);
+                            // Spin up listener
+                            var listenUrl = LiveServerManager.CreateLiveServer(directory);
 
-                            // Wait if first time
-                            if (firstOpen)
-                                await Task.Delay(500);
+                            // Open up the listen URL
+                            if (!string.IsNullOrEmpty(listenUrl))
+                            {
+                                // Open browser
+                                OpenBrowser(listenUrl);
 
-                            // No longer first open
-                            firstOpen = false;
+                                // Wait if first time
+                                if (firstOpen)
+                                    await Task.Delay(500);
+
+                                // No longer first open
+                                firstOpen = false;
+                            }
                         }
                     }
-                }
 
-                #endregion
+                    #endregion
+                }
 
                 #region Live Data
 

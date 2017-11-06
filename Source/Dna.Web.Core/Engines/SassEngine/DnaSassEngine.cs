@@ -78,7 +78,7 @@ namespace Dna.Web.Core
         }
 
         /// <summary>
-        /// Specifies Sass output paths based on Dna Config settings, if specified
+        /// Specifies Sass output paths based on Dna configuration settings, if specified
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
@@ -113,13 +113,32 @@ namespace Dna.Web.Core
                     InputFile = data.FullPath,
                     OutputFile = output.FullPath,
 
-                    // Include source map output in result
-                    GenerateSourceMap = true
+                    // Set file output style
+                    OutputStyle = data.LocalConfiguration.ScssOutputStyle ?? ScssOutputStyle.Compact,
+
+                    // If we should include source map output in result
+                    GenerateSourceMap = data.LocalConfiguration.ScssGenerateSourceMaps ?? false,
                 });
 
                 output.CompiledContents = result.Css;
 
-                // TODO: Could output source map based on configuration
+                // If we should generate source map, we have to write that file ourselves
+                if (data.LocalConfiguration.ScssGenerateSourceMaps == true)
+                {
+                    // Get map path
+                    var mapPath = $"{output.FullPath}.map";
+
+                    try
+                    {
+                        // Try and save file
+                        FileManager.SaveFile(result.SourceMap, mapPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log if we failed
+                        data.Error = $"Failed to write Css Source Map file {mapPath}. {ex.Message}";
+                    }
+                }
             }
             catch (Exception ex)
             {

@@ -7,11 +7,14 @@
   <InheritIgnoredWords>False</InheritIgnoredWords>
   <IgnoredWords>
     <Ignore>app</Ignore>
+    <Ignore>css</Ignore>
     <Ignore>deserialize</Ignore>
     <Ignore>html</Ignore>
-    <Ignore>json</Ignore>
-    <Ignore>url</Ignore>
     <Ignore>javascript</Ignore>
+    <Ignore>json</Ignore>
+    <Ignore>scss</Ignore>
+    <Ignore>url</Ignore>
+    <Ignore>dna</Ignore>
   </IgnoredWords>
   <InheritExclusionExpressions>True</InheritExclusionExpressions>
   <InheritIgnoredFilePatterns>True</InheritIgnoredFilePatterns>

@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using SharpScss;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -71,6 +72,18 @@ namespace Dna.Web.Core
         [JsonProperty(PropertyName = DnaSettings.ConfigurationNameCachePath)]
         public string CachePath { get; set; }
 
+        /// <summary>
+        /// The output style of the generated css file from a Sass file
+        /// </summary>
+        [JsonProperty(PropertyName = DnaSettings.ConfigurationNameScssOutputStyle)]
+        public ScssOutputStyle? ScssOutputStyle { get; set; }
+
+        /// <summary>
+        /// Whether to generate source maps for the css files back to the Scss files to allow debugging in browsers
+        /// </summary>
+        [JsonProperty(PropertyName = DnaSettings.ConfigurationNameScssGenerateSourceMap)]
+        public bool? ScssGenerateSourceMaps { get; set; }
+
         #endregion
 
         #region  Public Methods
@@ -87,6 +100,8 @@ namespace Dna.Web.Core
             CoreLogger.LogTabbed("Process And Close", ProcessAndClose.ToString(), 1, type: LogType.Information);
             CoreLogger.LogTabbed("Log Level", LogLevel.ToString(), 1, type: LogType.Information);
             CoreLogger.LogTabbed("Output Path", OutputPath, 1, type: LogType.Information);
+            CoreLogger.LogTabbed("Scss Output Style", ScssOutputStyle.ToString(), 1, type: LogType.Information);
+            CoreLogger.LogTabbed("Scss Generate Source Map", ScssGenerateSourceMaps.ToString(), 1, type: LogType.Information);
 
             CoreLogger.LogTabbed("Live Servers", (LiveServerDirectories?.Count ?? 0).ToString(), 1, type: LogType.Information);
             if (LiveServerDirectories?.Count > 0)
@@ -215,6 +230,12 @@ namespace Dna.Web.Core
 
                 // Output Path
                 TryGetSetting(() => currentSettings.OutputPath, () => finalSettings.OutputPath, resolvePath: true, currentPath: currentPath);
+
+                // Scss Output Style
+                TryGetSetting(() => currentSettings.ScssOutputStyle, () => finalSettings.ScssOutputStyle, resolvePath: true, currentPath: currentPath);
+
+                // Scss Generate Source Map 
+                TryGetSetting(() => currentSettings.ScssGenerateSourceMaps, () => finalSettings.ScssGenerateSourceMaps, resolvePath: true, currentPath: currentPath);
             }
 
             // Live Server Directories

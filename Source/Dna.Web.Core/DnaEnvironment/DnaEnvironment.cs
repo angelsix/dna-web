@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using SharpScss;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -315,6 +316,38 @@ namespace Dna.Web.Core
 
                             // Flag so we know to add newline to console log after this
                             overrides = true;
+                        }
+                        // Scss Output Style
+                        else if (arg.StartsWith("scssOutputStyle="))
+                        {
+                            // Try and parse it
+                            if (Enum.TryParse<ScssOutputStyle>(arg.Substring(arg.IndexOf("=") + 1), out ScssOutputStyle scssOutputStyle))
+                            {
+                                // Set new style
+                                Configuration.ScssOutputStyle = scssOutputStyle;
+
+                                // Log it
+                                CoreLogger.LogTabbed("Argument Override Scss Output Style", Configuration.ScssOutputStyle.ToString(), 1);
+
+                                // Flag so we know to add newline to console log after this
+                                overrides = true;
+                            }
+                        }
+                        // Scss Generate Source Map
+                        else if (arg.StartsWith("scssGenerateSourceMap="))
+                        {
+                            // Try and parse it
+                            if (bool.TryParse(arg.Substring(arg.IndexOf("=") + 1), out bool generateMap))
+                            {
+                                // Set new value
+                                Configuration.ScssGenerateSourceMaps = generateMap;
+
+                                // Log it
+                                CoreLogger.LogTabbed("Argument Override Scss Generate Source Map", Configuration.ScssGenerateSourceMaps.ToString(), 1);
+
+                                // Flag so we know to add newline to console log after this
+                                overrides = true;
+                            }
                         }
                     }
 

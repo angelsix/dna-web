@@ -126,6 +126,16 @@ namespace Dna.Web.Core
         /// </summary>
         public const string ConfigurationNameCachePath = "cachePath";
 
+        /// <summary>
+        /// The name of the configuration setting for a Scss Output STyle
+        /// </summary>
+        public const string ConfigurationNameScssOutputStyle = "scssOutputStyle";
+
+        /// <summary>
+        /// The name of the configuration setting for a Scss Generate Source Map
+        /// </summary>
+        public const string ConfigurationNameScssGenerateSourceMap = "scssGenerateSourceMap";
+
         #endregion
 
         #endregion

@@ -1332,8 +1332,36 @@ namespace Dna.Web.Core
                 // New variable for expected path
                 var newPath = foundPath;
 
-                // Add file extension if none specified and this engine only looks for one extension type
-                if (!Path.HasExtension(newPath) && EngineExtensions.Count == 1 && extension != ".*")
+                // If we found it, return contents
+                if (FileManager.FileExists(newPath))
+                {
+                    // Set the resolved path
+                    resolvedPath = newPath;
+
+                    // Return the contents
+                    return returnContents ? File.ReadAllText(newPath) : string.Empty;
+                }
+
+                var underscorePath = string.Empty;
+
+                // Try file with an underscore if it doesn't start with it (as partial files can start with _)
+                if (Path.GetFileName(newPath)[0] != '_')
+                {
+                    underscorePath = Path.Combine(Path.GetDirectoryName(newPath), "_" + Path.GetFileName(newPath));
+
+                    // If we found it, return contents
+                    if (FileManager.FileExists(underscorePath))
+                    {
+                        // Set the resolved path
+                        resolvedPath = underscorePath;
+
+                        // Return the contents
+                        return returnContents ? File.ReadAllText(underscorePath) : string.Empty;
+                    }
+                }
+
+                // Add file extension if engine only looks for one extension type
+                if (EngineExtensions.Count == 1 && extension != ".*")
                     newPath = newPath + extension;
 
                 // If we found it, return contents
@@ -1348,17 +1376,20 @@ namespace Dna.Web.Core
 
                 // Try file with an underscore if it doesn't start with it (as partial files can start with _)
                 if (Path.GetFileName(newPath)[0] != '_')
-                    newPath = Path.Combine(Path.GetDirectoryName(newPath), "_" + Path.GetFileName(newPath));
-
-                // If we found it, return contents
-                if (FileManager.FileExists(newPath))
                 {
-                    // Set the resolved path
-                    resolvedPath = newPath;
+                    underscorePath = Path.Combine(Path.GetDirectoryName(newPath), "_" + Path.GetFileName(newPath));
 
-                    // Return the contents
-                    return returnContents ? File.ReadAllText(newPath) : string.Empty;
+                    // If we found it, return contents
+                    if (FileManager.FileExists(underscorePath))
+                    {
+                        // Set the resolved path
+                        resolvedPath = underscorePath;
+
+                        // Return the contents
+                        return returnContents ? File.ReadAllText(underscorePath) : string.Empty;
+                    }
                 }
+
             }
 
             // Not found

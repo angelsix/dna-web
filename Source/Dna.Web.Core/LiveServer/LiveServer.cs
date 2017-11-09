@@ -83,8 +83,8 @@ function checkForChanges()
         }
     };
 
-    // Open connection
-    xhttp.open(""GET"", window.location + ""?newcontent"", true);
+    // Open connection (removing any # data after the URL)
+    xhttp.open(""GET"", location.href.replace(location.hash,"""").replace('#', '') + ""?newcontent"", true);
 
     // Make sure the response is not cached
     xhttp.setRequestHeader('Cache-Control', 'no-cache');

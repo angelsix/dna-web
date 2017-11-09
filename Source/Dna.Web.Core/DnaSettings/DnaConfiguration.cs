@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using SharpScss;
 using System;
 using System.Collections.Generic;
@@ -34,6 +35,7 @@ namespace Dna.Web.Core
         /// The generate files processing option on start up
         /// </summary>
         [JsonProperty(PropertyName = DnaSettings.ConfigurationNameGenerateOnStart)]
+        [JsonConverter(typeof(StringEnumConverter))]
         public GenerateOption? GenerateOnStart { get; set; }
 
         /// <summary>
@@ -46,6 +48,7 @@ namespace Dna.Web.Core
         /// The level of detail to log out
         /// </summary>
         [JsonProperty(PropertyName = DnaSettings.ConfigurationNameLogLevel)]
+        [JsonConverter(typeof(StringEnumConverter))]
         public LogLevel? LogLevel { get; set; }
 
         /// <summary>
@@ -76,6 +79,7 @@ namespace Dna.Web.Core
         /// The output style of the generated css file from a Sass file
         /// </summary>
         [JsonProperty(PropertyName = DnaSettings.ConfigurationNameScssOutputStyle)]
+        [JsonConverter(typeof(StringEnumConverter))]
         public ScssOutputStyle? ScssOutputStyle { get; set; }
 
         /// <summary>
@@ -195,6 +199,33 @@ namespace Dna.Web.Core
 
             // Return the result
             return finalSetting;
+        }
+
+        public static DnaConfiguration DefaultConfiguration()
+        {
+            return new DnaConfiguration
+            {
+                MonitorPath = ".",
+                GenerateOnStart = GenerateOption.All,
+                ProcessAndClose = false,
+                LogLevel = Core.LogLevel.Informative,
+                OutputPath = string.Empty,
+                ScssOutputStyle = SharpScss.ScssOutputStyle.Compressed,
+                ScssGenerateSourceMaps = false,
+                LiveDataSources = new List<DnaConfigurationLiveDataSource>()
+                {
+                    new DnaConfigurationLiveDataSource
+                    {
+                       ConfigurationFileSource = "https://raw.githubusercontent.com/angelsix/docs.dnaweb/master/LiveData/DnaWeb/dna.live.config"
+                    },
+                    new DnaConfigurationLiveDataSource
+                    {
+                       ConfigurationFileSource = "https://raw.githubusercontent.com/angelsix/dna-fabric/master/LiveData/Fabric/dna.live.config"
+                    },
+                },
+                LiveServerDirectories = new List<string>(new[] { "../WebRoot" }),
+                CachePath = "%LOCALAPPDATA%\\DnaWeb\\%VERSION%\\Cache\\",
+            };
         }
 
         #endregion

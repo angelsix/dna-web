@@ -240,6 +240,16 @@ namespace Dna.Web.Core
 
                     if (isWeb)
                     {
+                        // If Url is relative...
+                        if (!liveDataSource.Source.Contains("://"))
+                        {
+                            // Get URL folder
+                            var urlFolder = sourceConfiguration.ConfigurationFileSource.Substring(0, sourceConfiguration.ConfigurationFileSource.LastIndexOf('/'));
+
+                            // Prepend the current sources path
+                            liveDataSource.Source = $"{urlFolder}/{liveDataSource.Source}";
+                        }
+
                         // Now attempt to download the source zip file
                         CoreLogger.Log($"LiveData: Downloading source contents... {liveDataSource.Source}");
 

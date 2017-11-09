@@ -499,6 +499,11 @@ namespace Dna.Web.Core
             {
                 LogVersion();
             }
+            // New configuration file
+            if (command.EqualsIgnoreCase("new config"))
+            {
+                ProcessCommandNewConfiguration(command);
+            }
             // Current monitor folder
             else if (command.EqualsIgnoreCase("where"))
             {
@@ -622,6 +627,7 @@ namespace Dna.Web.Core
             CoreLogger.LogInformation("   live templates           List all available Live Templates");
             CoreLogger.LogInformation("   new template [name]      Extract specified Live Template");
             CoreLogger.LogInformation("   new source               Create a new blank Live Data Source");
+            CoreLogger.LogInformation("   new config               Create a new default dna.config file");
             CoreLogger.LogInformation("   q                        Quit");
             CoreLogger.LogInformation("");
         }
@@ -728,6 +734,59 @@ namespace Dna.Web.Core
             else
                 // Log it
                 CoreLogger.Log($"Template {foundTemplate.Name} successfully extracted to {destination}", type: LogType.Success);
+        }
+
+
+        /// <summary>
+        /// Processes the new configuration command
+        /// </summary>
+        /// <param name="command">The command</param>
+        protected void ProcessCommandNewConfiguration(string command)
+        {
+            // Make sure visual output path ends with \
+            var outputPath = Configuration.MonitorPath;
+            if (!outputPath.EndsWith("\\"))
+                outputPath += '\\';
+
+            // Ask for extraction folder
+            CoreLogger.LogInformation($"Extract to: {outputPath}", newLine: false);
+
+            var destination = Console.ReadLine();
+
+            // Resolve path based on the monitor path being the root
+            destination = DnaConfiguration.ResolveFullPath(Configuration.MonitorPath, destination, true, out bool wasRelative);
+
+            // Add configuration file name
+            destination = Path.Combine(destination, DnaSettings.ConfigurationFileName);
+
+            // Make sure configuration does not exist
+            if (File.Exists(destination))
+            {
+                // Log it
+                CoreLogger.Log($"Configuration file already exists {destination}", type: LogType.Warning);
+
+                // Done
+                return;
+            }
+
+            try
+            {
+                // Make sure folder exists
+                var destinationFolder = Path.GetDirectoryName(destination);
+                if (!Directory.Exists(destinationFolder))
+                    Directory.CreateDirectory(destinationFolder);
+
+                // Now save JSON output of a default configuration file
+                File.WriteAllText(destination, JsonConvert.SerializeObject(DnaConfiguration.DefaultConfiguration(), Formatting.Indented));
+
+                // Log it
+                CoreLogger.Log($"New configuration file created {destination}", type: LogType.Success);
+            }
+            catch (Exception ex)
+            {
+                // Log it
+                CoreLogger.Log($"Failed to save new configuration file {destination}. {ex.Message}", type: LogType.Error);
+            }
         }
 
         /// <summary>

@@ -66,7 +66,7 @@ namespace Dna.Web.Core
                 {
                     // Append (n)
                     // So: image.png -> image (1).png -> image (2).png etc...
-                    path = Path.Combine(Path.GetDirectoryName(path), $"{Path.GetFileNameWithoutExtension(path)} ({count}).{Path.GetExtension(path)}");
+                    path = Path.Combine(Path.GetDirectoryName(path), $"{Path.GetFileNameWithoutExtension(path)} ({count}){Path.GetExtension(path)}");
                 }
 
                 return path;

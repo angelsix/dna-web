@@ -9,12 +9,13 @@
     <Ignore>app</Ignore>
     <Ignore>css</Ignore>
     <Ignore>deserialize</Ignore>
+    <Ignore>dna</Ignore>
     <Ignore>html</Ignore>
     <Ignore>javascript</Ignore>
     <Ignore>json</Ignore>
     <Ignore>scss</Ignore>
     <Ignore>url</Ignore>
-    <Ignore>dna</Ignore>
+    <Ignore>config</Ignore>
   </IgnoredWords>
   <InheritExclusionExpressions>True</InheritExclusionExpressions>
   <InheritIgnoredFilePatterns>True</InheritIgnoredFilePatterns>

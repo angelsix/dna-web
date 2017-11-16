@@ -491,6 +491,9 @@ namespace Dna.Web.Core
                 if (Configuration.OpenVsCode == true)
                     OpenVsCode(Configuration.MonitorPath);
 
+                // Check for updates
+                AutoUpdateManager.CheckForUpdate();
+
                 #endregion
 
                 CoreLogger.LogInformation("Command: ", newLine: false, faded: true);

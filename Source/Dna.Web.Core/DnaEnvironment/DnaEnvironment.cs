@@ -349,6 +349,22 @@ namespace Dna.Web.Core
                                 overrides = true;
                             }
                         }
+                        // Open VS Code
+                        else if (arg.StartsWith("openVsCode="))
+                        {
+                            // Try and parse it
+                            if (bool.TryParse(arg.Substring(arg.IndexOf("=") + 1), out bool openVsCode))
+                            {
+                                // Set new value
+                                Configuration.OpenVsCode = openVsCode;
+
+                                // Log it
+                                CoreLogger.LogTabbed("Argument Override Open VS Code", Configuration.OpenVsCode.ToString(), 1);
+
+                                // Flag so we know to add newline to console log after this
+                                overrides = true;
+                            }
+                        }
                     }
 
                 // Add newline if there are any argument overrides for console log niceness
@@ -466,6 +482,14 @@ namespace Dna.Web.Core
 
                 // Download any out-of-date / unprocessed live sources
                 LiveDataManager.DownloadSourcesAsync(Configuration.LiveDataSources);
+
+                #endregion
+
+                #region Open VS Code
+
+                // Should we open VS Code?
+                if (Configuration.OpenVsCode == true)
+                    OpenVsCode(Configuration.MonitorPath);
 
                 #endregion
 
@@ -1127,6 +1151,81 @@ html
 
             // Unknown system
             return false;
+        }
+
+        /// <summary>
+        /// Opens the specified folder in VS Code, if VS Code is installed
+        /// </summary>
+        /// <returns></returns>
+        /// <param name="path">The path to open</param>
+        private static bool OpenVsCode(string path)
+        {
+            // Filename of command line
+            var filename = string.Empty;
+
+            // If windows...
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                // It is cmd.exe
+                filename = "cmd.exe";
+            // If linux...
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                // It is bin/bash
+                filename = "/bin/bash";
+            // If it is Mac
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                // It is bash
+                filename = "bash";
+            // Otherwise...
+            else
+                // Unknown system
+                return false;
+
+            // Check VS Code is installed
+            var process = Process.Start(new ProcessStartInfo
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardInput = true,
+                FileName = filename,
+                Arguments = "/C code --version"
+            });
+
+            // Start and wait for end
+            process.WaitForExit();
+
+            // If it did not exit...
+            if (!process.HasExited)
+                // Presume it isn't installed
+                return false;
+
+            // Get output
+            var codeResponse = process.StandardOutput.ReadToEnd();
+
+            // Get the output int lines
+            var lines = codeResponse?.Split(new[] { "\n", Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+
+            // First line should be version string
+            // If it isn't...
+            if (lines == null || lines.Length <= 0 || !Version.TryParse(lines[0], out Version vsVersion))
+                // Presume not installed
+                return false;
+
+            // If we get here, we have got a valid response with a version number
+            // so it is safe to open VS Code with the folder
+
+            // Log it
+            CoreLogger.Log($"Opening VS Code for folder '{path}'...", type: LogType.Attention);
+
+            // Open VS Code
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = filename,
+                Arguments = $"/C code {path}"
+            });
+
+            // Done
+            return true;
         }
 
         /// <summary>

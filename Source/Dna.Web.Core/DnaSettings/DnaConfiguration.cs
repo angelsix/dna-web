@@ -88,6 +88,12 @@ namespace Dna.Web.Core
         [JsonProperty(PropertyName = DnaSettings.ConfigurationNameScssGenerateSourceMap)]
         public bool? ScssGenerateSourceMaps { get; set; }
 
+        /// <summary>
+        /// If VS Code is detected as installed, on starting up should DnaWeb open the current folder in VS Code
+        /// </summary>
+        [JsonProperty(PropertyName = DnaSettings.ConfigurationNameOpenVsCode)]
+        public bool? OpenVsCode { get; set; }
+
         #endregion
 
         #region  Public Methods
@@ -106,6 +112,7 @@ namespace Dna.Web.Core
             CoreLogger.LogTabbed("Output Path", OutputPath, 1, type: LogType.Information);
             CoreLogger.LogTabbed("Scss Output Style", ScssOutputStyle.ToString(), 1, type: LogType.Information);
             CoreLogger.LogTabbed("Scss Generate Source Map", ScssGenerateSourceMaps.ToString(), 1, type: LogType.Information);
+            CoreLogger.LogTabbed("Open VS Code", OpenVsCode.ToString(), 1, type: LogType.Information);
 
             CoreLogger.LogTabbed("Live Servers", (LiveServerDirectories?.Count ?? 0).ToString(), 1, type: LogType.Information);
             if (LiveServerDirectories?.Count > 0)
@@ -268,6 +275,9 @@ namespace Dna.Web.Core
                 // Scss Generate Source Map 
                 TryGetSetting(() => currentSettings.ScssGenerateSourceMaps, () => finalSettings.ScssGenerateSourceMaps, resolvePath: true, currentPath: currentPath);
             }
+
+            // Open Vs Code
+            TryGetSetting(() => currentSettings.OpenVsCode, () => finalSettings.OpenVsCode, resolvePath: true, currentPath: currentPath);
 
             // Live Server Directories
             TryGetSettingList(() => currentSettings.LiveServerDirectories, () => finalSettings.LiveServerDirectories, resolvePath: true, currentPath: currentPath);

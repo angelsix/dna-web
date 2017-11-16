@@ -136,6 +136,11 @@ namespace Dna.Web.Core
         /// </summary>
         public const string ConfigurationNameScssGenerateSourceMap = "scssGenerateSourceMap";
 
+        /// <summary>
+        /// The name of the configuration setting for a Open Vs Code
+        /// </summary>
+        public const string ConfigurationNameOpenVsCode = "openVsCode";
+
         #endregion
 
         #endregion

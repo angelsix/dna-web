@@ -34,7 +34,7 @@ namespace Dna.Web.Core
                     while ((zipEntry = s.GetNextEntry()) != null)
                     {
                         // Get absolute path of file/folder
-                        var zipEntryPath = Path.Combine(destinationPath, zipEntry.Name);
+                        var zipEntryPath = Path.Combine(destinationPath, zipEntry.Name).Replace("/", "\\");
 
                         // If this item is a directory
                         if (!zipEntry.IsFile)
@@ -47,6 +47,11 @@ namespace Dna.Web.Core
                         // If it is a file...
                         else
                         {
+                            // Ensure folder
+                            var filesFolder = Path.GetDirectoryName(zipEntryPath);
+                            if (!Directory.Exists(filesFolder))
+                                Directory.CreateDirectory(filesFolder);
+
                             // Create file stream
                             using (var streamWriter = File.Create(zipEntryPath))
                                 // Write to the destination in 2kb chunks

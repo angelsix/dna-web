@@ -1221,7 +1221,7 @@ html
             Process.Start(new ProcessStartInfo
             {
                 FileName = filename,
-                Arguments = $"/C code {path}"
+                Arguments = $@"/C code ""{path}"""
             });
 
             // Done

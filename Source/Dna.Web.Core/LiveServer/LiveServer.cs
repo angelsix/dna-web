@@ -535,7 +535,7 @@ window.onload = checkForChanges;";
                     var bytes = Encoding.UTF8.GetBytes(htmlContents);
 
                     // Set content length
-                    context.Response.ContentLength64 = htmlContents.Length;
+                    context.Response.ContentLength64 = bytes.Length;
 
                     // Write to response
                     context.Response.OutputStream.Write(bytes, 0, bytes.Length);

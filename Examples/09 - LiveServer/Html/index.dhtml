@@ -1,4 +1,5 @@
 <!--@ include header @-->
     <h1>Auto-Refreshing Page</h1>
     <p>Edit any file in this project (dhtml, scss, html, css etc...) and watch this page auto-refresh</p>
+    <p>Test for serving UTF characters áéíóú ü</p>
 <!--@ include footer @-->

@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Dna.Web.Core
 {
@@ -65,6 +67,11 @@ namespace Dna.Web.Core
         /// The version of DnaWeb
         /// </summary>
         public static Version Version { get; private set; } = typeof(DnaSettings).Assembly.GetName().Version;
+
+        /// <summary>
+        /// The platform of DnaWeb (such as Windows 32bit, Mac OSX, Linux 64bit)
+        /// </summary>
+        public static Platform Platform { get; private set; } = GetPlatform();
 
         #endregion
 
@@ -136,7 +143,46 @@ namespace Dna.Web.Core
         /// </summary>
         public const string ConfigurationNameScssGenerateSourceMap = "scssGenerateSourceMap";
 
+        /// <summary>
+        /// The name of the configuration setting for a Open Vs Code
+        /// </summary>
+        public const string ConfigurationNameOpenVsCode = "openVsCode";
+
         #endregion
+
+        #endregion
+
+        #region Private Helpers
+
+        /// <summary>
+        /// Gets the platform of this machine (windows/linux/mac, 32/64bit)
+        /// </summary>
+        /// <returns></returns>
+        private static Platform GetPlatform()
+        {
+            // If windows...
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                // Return Windows 32/64bit
+                return RuntimeInformation.OSArchitecture == Architecture.X64 ? Platform.Windows64 : Platform.Windows32;
+            // If linux...
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                // Return Linux 32/64bit
+                return RuntimeInformation.OSArchitecture == Architecture.X64 ? Platform.Linux64 : Platform.Linux32;
+            // If osx...
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                // Return OSX
+                return Platform.Osx;
+
+            // Anything else is unknown
+            // Log it
+            CoreLogger.Log("Running on unknown architecture!", type: LogType.Error);
+
+            // Break to debugger
+            Debugger.Break();
+
+            // Return unknown
+            return Platform.Unknown;
+        }
 
         #endregion
     }

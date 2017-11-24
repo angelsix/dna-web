@@ -52,7 +52,7 @@ namespace Dna.Web.Core
         /// <returns></returns>
         protected override Task PostProcessFile(FileProcessingData data)
         {
-            return Task.Run(() =>
+            return SafeTask.Run(() =>
             {
                 // For each output
                 data.OutputPaths.ForEach(output =>

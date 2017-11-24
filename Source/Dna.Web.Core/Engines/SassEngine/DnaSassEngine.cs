@@ -59,7 +59,7 @@ namespace Dna.Web.Core
 
         protected override Task PreProcessFile(FileProcessingData data)
         {
-            return Task.Run(() =>
+            return SafeTask.Run(() =>
             {
                 // We don't need any processing for Sass files
                 // It is all done via the Sass engine
@@ -84,7 +84,7 @@ namespace Dna.Web.Core
         /// <returns></returns>
         protected override Task PostProcessOutputPaths(FileProcessingData data)
         {
-            return Task.Run(() =>
+            return SafeTask.Run(() =>
             {
                 // For now just output in the same directory as Sass file
                 data.OutputPaths.Add(new FileOutputData

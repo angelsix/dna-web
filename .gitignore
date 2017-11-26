@@ -25,6 +25,8 @@ Examples/*.css
 Examples/*/*.css
 Examples/*/*/*.css
 
+Examples/10 - StaticFolders/WebRoot/
+
 project.lock.json
 
 node_modules/

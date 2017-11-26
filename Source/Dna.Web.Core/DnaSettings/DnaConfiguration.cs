@@ -18,7 +18,7 @@ namespace Dna.Web.Core
     ///  1. Add public property to DnaConfiguration class, and JsonProperty name to match
     ///  2. Add TryGetSetting for that property into the MergeSettings
     ///  3. Add log output in LogFinalConfiguration
-    ///  4. Add any override values from command line interpreters and such for the new property
+    ///  4. Add any override values from command line interpreters (DnaEnvironment) and such for the new property
     /// 
     /// </remarks>
     public class DnaConfiguration
@@ -94,6 +94,9 @@ namespace Dna.Web.Core
         [JsonProperty(PropertyName = DnaSettings.ConfigurationNameOpenVsCode)]
         public bool? OpenVsCode { get; set; }
 
+        [JsonProperty(PropertyName = DnaSettings.ConfigurationNameStaticFolders)]
+        public List<DnaConfigurationStaticFolder> StaticFolders { get; set; }
+
         #endregion
 
         #region  Public Methods
@@ -113,6 +116,10 @@ namespace Dna.Web.Core
             CoreLogger.LogTabbed("Scss Output Style", ScssOutputStyle.ToString(), 1, type: LogType.Information);
             CoreLogger.LogTabbed("Scss Generate Source Map", ScssGenerateSourceMaps.ToString(), 1, type: LogType.Information);
             CoreLogger.LogTabbed("Open VS Code", OpenVsCode.ToString(), 1, type: LogType.Information);
+
+            CoreLogger.LogTabbed("Static Folders", (StaticFolders?.Count ?? 0).ToString(), 1, type: LogType.Information);
+            if (StaticFolders?.Count > 0)
+                StaticFolders.ForEach(directory => CoreLogger.LogTabbed($"{directory.SourceFolder} > {directory.DestinationFolder}", string.Empty, 2, LogType.Information));
 
             CoreLogger.LogTabbed("Live Servers", (LiveServerDirectories?.Count ?? 0).ToString(), 1, type: LogType.Information);
             if (LiveServerDirectories?.Count > 0)
@@ -208,6 +215,10 @@ namespace Dna.Web.Core
             return finalSetting;
         }
 
+        /// <summary>
+        /// Get's a default configuration class for the default settings
+        /// </summary>
+        /// <returns></returns>
         public static DnaConfiguration DefaultConfiguration()
         {
             return new DnaConfiguration
@@ -279,6 +290,19 @@ namespace Dna.Web.Core
             // Open Vs Code
             TryGetSetting(() => currentSettings.OpenVsCode, () => finalSettings.OpenVsCode, resolvePath: true, currentPath: currentPath);
 
+            // Static Folders
+
+            // TODO: Improve this and automate it with attributes or something on the properties...
+            //       For now manually resolve them
+            currentSettings.StaticFolders?.ForEach(staticFolder =>
+            {
+                staticFolder.SourceFolder = ResolveFullPath(currentPath, staticFolder.SourceFolder, true, out bool wasRelative);
+                staticFolder.DestinationFolder = ResolveFullPath(currentPath, staticFolder.DestinationFolder, true, out wasRelative);
+            });
+
+            TryGetSettingList(() => currentSettings.StaticFolders, () => finalSettings.StaticFolders, resolvePath: true, currentPath: currentPath,
+                logDetails: (item) => $"{item.SourceFolder} > {item.DestinationFolder}");
+
             // Live Server Directories
             TryGetSettingList(() => currentSettings.LiveServerDirectories, () => finalSettings.LiveServerDirectories, resolvePath: true, currentPath: currentPath);
 
@@ -328,7 +352,7 @@ namespace Dna.Web.Core
                     if (resolvePath)
                     {
                         // Resolve path
-                        var resolvedPath = DnaConfiguration.ResolveFullPath(currentPath ?? string.Empty, currentString, true, out bool wasRelative);
+                        var resolvedPath = ResolveFullPath(currentPath ?? string.Empty, currentString, true, out bool wasRelative);
 
                         // Set resolved path
                         finalValueExpression.SetPropertyValue<T>(resolvedPath);

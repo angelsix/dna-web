@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -17,9 +18,9 @@ namespace Dna.Web.Core
         private FileSystemWatcher mFileSystemWatcher;
 
         /// <summary>
-        /// The Id of the newest file update event
+        /// A unique Id for each file that changes every time a change is made
         /// </summary>
-        private Guid mLastUpdateId;
+        private Dictionary<string, Guid> mLastUpdateIds = new Dictionary<string, Guid>();
 
         #endregion
 
@@ -40,7 +41,7 @@ namespace Dna.Web.Core
         /// To monitor all files use *.*
         /// To monitor for txt files do *.txt
         /// </summary>
-        public string Filter { get; set; } = "*.*";
+        public string Filter { get; set; } = "*";
 
         #endregion
 
@@ -50,6 +51,26 @@ namespace Dna.Web.Core
         /// Fired when a file has had its contents changed
         /// </summary>
         public event Action<string> FileChanged = (path) => { };
+
+        /// <summary>
+        /// Fired when a file has been deleted
+        /// </summary>
+        public event Action<string> FileDeleted = (path) => { };
+
+        /// <summary>
+        /// Fired when a folder has been deleted
+        /// </summary>
+        public event Action<string> FolderDeleted = (path) => { };
+
+        /// <summary>
+        /// Fired when a file has been renamed/moved
+        /// </summary>
+        public event Action<(string from, string to)> FileRenamed = (details) => { };
+
+        /// <summary>
+        /// Fired when a folder has been renamed/moved
+        /// </summary>
+        public event Action<(string from, string to)> FolderRenamed = (details) => { };
 
         #endregion
 
@@ -92,6 +113,9 @@ namespace Dna.Web.Core
                 // Hook into renames separately
                 mFileSystemWatcher.Renamed += FileSystemWatcher_Renamed;
 
+                // Monitor for deletion
+                mFileSystemWatcher.Deleted += FileSystemWatcher_Deleted;
+
                 // Turn on raising events
                 mFileSystemWatcher.EnableRaisingEvents = true;
             }
@@ -108,7 +132,13 @@ namespace Dna.Web.Core
         /// <param name="e"></param>
         private void FileSystemWatcher_Renamed(object sender, RenamedEventArgs e)
         {
-            OnFileChanged(e.FullPath);
+            // If it is a file...
+            if (File.Exists(e.FullPath))
+                // Fire file rename event
+                FileRenamed((from: e.OldFullPath, to: e.FullPath));
+            else
+                // Fire folder rename event
+                FolderRenamed((from: e.OldFullPath, to: e.FullPath));
         }
 
         /// <summary>
@@ -118,7 +148,26 @@ namespace Dna.Web.Core
         /// <param name="e"></param>
         private void FileSystemWatcher_Changed(object sender, FileSystemEventArgs e)
         {
-            OnFileChanged(e.FullPath);
+            // If it is a file...
+            if (File.Exists(e.FullPath))
+                // Fire file changed event
+                OnFileChanged(e.FullPath);
+        }
+
+        /// <summary>
+        /// Fired when a file has been deleted
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void FileSystemWatcher_Deleted(object sender, FileSystemEventArgs e)
+        {
+            // If it is a file...
+            if (File.Exists(e.FullPath))
+                // Fire file deleted event
+                FileDeleted(e.FullPath);
+            else
+                // Fire folder deleted event
+                FolderDeleted(e.FullPath);
         }
 
         /// <summary>
@@ -131,14 +180,18 @@ namespace Dna.Web.Core
             var path = fullPath;
 
             // Set the last update Id to this one
+            if (!mLastUpdateIds.ContainsKey(path))
+                mLastUpdateIds.Add(path, Guid.NewGuid());
+
+            // Create new change Id for this path
             var updateId = Guid.NewGuid();
-            mLastUpdateId = updateId;
+            mLastUpdateIds[path] = updateId;
 
             // Wait the delay period
             Task.Delay(Math.Max(1, UpdateDelay)).ContinueWith((t) =>
             {
                 // Check if the last update Id still matches, meaning no updates since that time
-                if (updateId != mLastUpdateId)
+                if (updateId != mLastUpdateIds[path])
                     return;
 
                 // Settle time reached, so fire off the change event

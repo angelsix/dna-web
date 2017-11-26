@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Title</title>
+    <link href="/Assets/Css/style.css" rel="stylesheet" type="text/css" />
+    <link href="/Assets/Css/modern1.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="/Assets/Js/dna.core.js"></script>
+    <script type="text/javascript" src="/Assets/Js/dna.scroll.core.js"></script>
+    <script type="text/javascript" src="/Assets/Js/dna.scroll.scrolldown.js"></script>
+    <script type="text/javascript" src="/Assets/Js/dna.scroll.parallax.js"></script>
+    <script type="text/javascript" src="/Assets/Js/dna.topmenu.js"></script>
+    <script type="text/javascript" src="/Assets/Js/dna.particles.js"></script>
+</head>
+
+<body>
+
+    <!-- Top Navigation Menu -->
+    <nav class="top-menu-standard slide-in-down" data-scrolldown-class="reduced">
+
+        <!-- Top Menu Contents -->
+        <div>
+
+            <!-- Logo -->
+            <img src="/Assets/Images/logo-flat.png" />
+
+            <!-- Menu Icon -->
+            <div class="menu-icon">
+                <a href="#topmenu" data-toggle-class="expanded">
+                    <i class="ion-navicon-round"></i>
+                </a>
+            </div>
+
+            <!-- Menu items -->
+            <ul data-topmenu-class="expanded">
+                <li>
+                    <a href="#">blog</a>
+                </li>
+                <li>
+                    <a href="#">youtube</a>
+                </li>
+                <li>
+                    <a href="#">solidworks</a>
+                </li>
+                <li>
+                    <a href="#">fasetto</a>
+                </li>
+                <li>
+                    <a href="#">contact</a>
+                </li>
+            </ul>
+
+        </div>
+
+    </nav>
+
+    <main>
+
+        <!-- Mascot Banner -->
+        <header>
+
+            <div class="grid-wrapper">
+                <div class="grid">
+                    <div class="col one-half mob-one-whole">
+                        <div class="mascot-particles" data-particle-bubbles="0.2"></div>
+                        <div class="mascot-background" data-parallax-scroll-background="0.5"></div>
+                    </div>
+                    <div class="col one-half mob-one-whole">
+
+                    </div>
+                </div>
+            </div>
+
+        </header>
+
+        <!--@ include fabric/fabric.samplegrids @-->
+    </main>
+
+</body>
+
+</html>

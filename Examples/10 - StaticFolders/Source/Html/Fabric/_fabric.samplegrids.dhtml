@@ -1,0 +1,481 @@
+<div class="fabric-grid-demo">
+    <div class="grid-wrapper">
+
+        <div class="text-horizontal-center">
+            <h1>Dna Fabric Grid</h1>
+        </div>
+
+        <div class="grid">
+            <div class="col one-half below-desk-one-quarter">
+                <span class="demo-col">Resize me</span>
+            </div>
+            <div class="col one-half below-desk-one-quarter">
+                <span class="demo-col">Resize me</span>
+            </div>
+
+            <div class="col one-half below-desk-one-quarter desk-hidden">
+                <span class="demo-col">Magic</span>
+            </div>
+            <div class="col one-half below-desk-one-quarter desk-hidden">
+                <span class="demo-col">Magic</span>
+            </div>
+
+            <div class="col one-quarter below-desk-full">
+                <span class="demo-col">1</span>
+            </div>
+            <div class="col one-quarter below-desk-full">
+                <span class="demo-col">2</span>
+            </div>
+            <div class="col one-quarter below-desk-one-half below-lap-full">
+                <span class="demo-col">3</span>
+            </div>
+            <div class="col one-quarter below-desk-one-half below-lap-full">
+                <span class="demo-col">4</span>
+            </div>
+
+            <div class="col desk-hidden tab-hidden mob-hidden">
+                <div class="grid">
+                    <div class="col one-half">
+                        <span class="demo-col">Laptop only</span>
+                    </div>
+                    <div class="col one-half">
+                        <span class="demo-col">Laptop only</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col desk-hidden lap-hidden mob-hidden">
+                <div class="grid">
+                    <div class="col one-half">
+                        <span class="demo-col">Tablet only</span>
+                    </div>
+                    <div class="col one-half">
+                        <span class="demo-col">Tablet only</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="grid-wrapper">
+
+        <div class="text-horizontal-center">
+            <h1>Basic Grid</h1>
+            <p>Showing off the available grid column sizes</p>
+        </div>
+
+        <div class="grid">
+            <div class="col one-half">
+                <span class="demo-col">1/2</span>
+            </div>
+            <div class="col one-half">
+                <span class="demo-col">1/2</span>
+            </div>
+
+            <div class="col one-third">
+                <span class="demo-col">1/3</span>
+            </div>
+            <div class="col one-third">
+                <span class="demo-col">1/3</span>
+            </div>
+            <div class="col one-third">
+                <span class="demo-col">1/3</span>
+            </div>
+
+            <div class="col one-quarter">
+                <span class="demo-col">1/4</span>
+            </div>
+            <div class="col one-quarter">
+                <span class="demo-col">1/4</span>
+            </div>
+            <div class="col one-quarter">
+                <span class="demo-col">1/4</span>
+            </div>
+            <div class="col one-quarter">
+                <span class="demo-col">1/4</span>
+            </div>
+
+            <div class="col one-fifth">
+                <span class="demo-col">1/5</span>
+            </div>
+            <div class="col one-fifth">
+                <span class="demo-col">1/5</span>
+            </div>
+            <div class="col one-fifth">
+                <span class="demo-col">1/5</span>
+            </div>
+            <div class="col one-fifth">
+                <span class="demo-col">1/5</span>
+            </div>
+            <div class="col one-fifth">
+                <span class="demo-col">1/5</span>
+            </div>
+
+            <div class="col one-sixth">
+                <span class="demo-col">1/6</span>
+            </div>
+            <div class="col one-sixth">
+                <span class="demo-col">1/6</span>
+            </div>
+            <div class="col one-sixth">
+                <span class="demo-col">1/6</span>
+            </div>
+            <div class="col one-sixth">
+                <span class="demo-col">1/6</span>
+            </div>
+            <div class="col one-sixth">
+                <span class="demo-col">1/6</span>
+            </div>
+            <div class="col one-sixth">
+                <span class="demo-col">1/6</span>
+            </div>
+
+            <div class="col one-eighth">
+                <span class="demo-col">1/8</span>
+            </div>
+            <div class="col one-eighth">
+                <span class="demo-col">1/8</span>
+            </div>
+            <div class="col one-eighth">
+                <span class="demo-col">1/8</span>
+            </div>
+            <div class="col one-eighth">
+                <span class="demo-col">1/8</span>
+            </div>
+            <div class="col one-eighth">
+                <span class="demo-col">1/8</span>
+            </div>
+            <div class="col one-eighth">
+                <span class="demo-col">1/8</span>
+            </div>
+            <div class="col one-eighth">
+                <span class="demo-col">1/8</span>
+            </div>
+            <div class="col one-eighth">
+                <span class="demo-col">1/8</span>
+            </div>
+
+            <div class="col one-tenth">
+                <span class="demo-col">1/10</span>
+            </div>
+            <div class="col one-tenth">
+                <span class="demo-col">1/10</span>
+            </div>
+            <div class="col one-tenth">
+                <span class="demo-col">1/10</span>
+            </div>
+            <div class="col one-tenth">
+                <span class="demo-col">1/10</span>
+            </div>
+            <div class="col one-tenth">
+                <span class="demo-col">1/10</span>
+            </div>
+            <div class="col one-tenth">
+                <span class="demo-col">1/10</span>
+            </div>
+            <div class="col one-tenth">
+                <span class="demo-col">1/10</span>
+            </div>
+            <div class="col one-tenth">
+                <span class="demo-col">1/10</span>
+            </div>
+            <div class="col one-tenth">
+                <span class="demo-col">1/10</span>
+            </div>
+            <div class="col one-tenth">
+                <span class="demo-col">1/10</span>
+            </div>
+
+            <div class="col one-twelfth">
+                <span class="demo-col">1/12</span>
+            </div>
+            <div class="col one-twelfth">
+                <span class="demo-col">1/12</span>
+            </div>
+            <div class="col one-twelfth">
+                <span class="demo-col">1/12</span>
+            </div>
+            <div class="col one-twelfth">
+                <span class="demo-col">1/12</span>
+            </div>
+            <div class="col one-twelfth">
+                <span class="demo-col">1/12</span>
+            </div>
+            <div class="col one-twelfth">
+                <span class="demo-col">1/12</span>
+            </div>
+            <div class="col one-twelfth">
+                <span class="demo-col">1/12</span>
+            </div>
+            <div class="col one-twelfth">
+                <span class="demo-col">1/12</span>
+            </div>
+            <div class="col one-twelfth">
+                <span class="demo-col">1/12</span>
+            </div>
+            <div class="col one-twelfth">
+                <span class="demo-col">1/12</span>
+            </div>
+            <div class="col one-twelfth">
+                <span class="demo-col">1/12</span>
+            </div>
+            <div class="col one-twelfth">
+                <span class="demo-col">1/12</span>
+            </div>
+
+            <div class="col one-whole">
+                <span class="demo-col">1</span>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="grid-wrapper">
+
+        <div class="text-horizontal-center">
+            <h1>Vertical Alignment</h1>
+            <p>Usually impossible in fluid grid's, the DNA grid allows you to vertically align columns</p>
+        </div>
+
+        <div class="grid vertical-center">
+            <div class="col">
+                <span class="demo-col">Top</span>
+            </div>
+
+            <div class="col one-fifth">
+                <span class="demo-col">Middle</span>
+            </div>
+            <div class="col one-fifth">
+                <span class="demo-col-medium">Middle</span>
+            </div>
+            <div class="col one-fifth">
+                <span class="demo-col-big">Middle</span>
+            </div>
+            <div class="col one-fifth">
+                <span class="demo-col-medium">Middle</span>
+            </div>
+            <div class="col one-fifth">
+                <span class="demo-col">Middle</span>
+            </div>
+            <div class="col">
+                <span class="demo-col">Bottom</span>
+            </div>
+        </div>
+
+    </div>
+
+
+    <div class="grid-wrapper">
+
+        <div class="text-horizontal-center">
+            <h1>Push Pull</h1>
+            <p>A responsive grid wouldn't be complete without pushing and pulling</p>
+        </div>
+
+        <div class="grid">
+
+            <div class="col col-full">
+                <div class="grid">
+                    <div class="col eight-tenths">
+                        <span class="demo-col">Normal</span>
+                    </div>
+                    <div class="col one-tenth push-one-tenth">
+                        <span class="demo-col">Pushed</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col col-full">
+                <div class="grid">
+                    <div class="col seven-tenths push-three-tenths">
+                        <span class="demo-col">Pushed</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col col-full">
+                <div class="grid">
+                    <div class="col four-tenths push-one-half">
+                        <span class="demo-col">Pushed forward</span>
+                    </div>
+                    <div class="col four-tenths pull-three-tenths">
+                        <span class="demo-col">Pulled back</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col col-full">
+                <div class="grid">
+                    <div class="col four-twelfths">
+                        <span class="demo-col">Col 1</span>
+                    </div>
+                    <div class="col four-twelfths push-four-twelfths">
+                        <span class="demo-col">Col 2</span>
+                    </div>
+                    <div class="col four-twelfths pull-four-twelfths">
+                        <span class="demo-col">Col 3</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <div class="grid-wrapper">
+
+        <div class="text-horizontal-center">
+            <h1>Centered Grid</h1>
+            <p>Centering partial width rows is also simple</p>
+        </div>
+
+        <div class="grid">
+            <div class="col">
+                <span class="demo-col">Centered</span>
+            </div>
+        </div>
+        <div class="grid horizontal-center">
+            <div class="col ten-twelfths">
+                <span class="demo-col">Centered</span>
+            </div>
+        </div>
+        <div class="grid horizontal-center">
+            <div class="col one-half">
+                <span class="demo-col">Centered</span>
+            </div>
+        </div>
+        <div class="grid horizontal-center">
+            <div class="col one-quarter">
+                <span class="demo-col">Centered</span>
+            </div>
+        </div>
+
+    </div>
+
+
+    <div class="grid-wrapper">
+
+        <div class="text-horizontal-center">
+            <h1>Tiled Grid</h1>
+            <p>Specifying the width of columns within the grid allows for a tile style layout, that can also change based on
+                size. Great for galleries</p>
+            <p>The four-up grid below fits 4 items in at desktop size, and only 2 once it gets below desktop, then a single
+                row for mobile</p>
+        </div>
+
+        <div class="grid tile-one-quarter below-desk-tile-one-half mob-tile-one-whole">
+            <div class="col">
+                <span class="demo-col">Four-up</span>
+            </div>
+            <div class="col">
+                <span class="demo-col">Four-up</span>
+            </div>
+            <div class="col">
+                <span class="demo-col">Four-up</span>
+            </div>
+            <div class="col">
+                <span class="demo-col">Four-up</span>
+            </div>
+            <div class="col">
+                <span class="demo-col">Four-up</span>
+            </div>
+            <div class="col">
+                <span class="demo-col">Four-up</span>
+            </div>
+            <div class="col">
+                <span class="demo-col">Four-up</span>
+            </div>
+            <div class="col">
+                <span class="demo-col">Four-up</span>
+            </div>
+        </div>
+
+    </div>
+
+
+    <div class="grid-wrapper">
+
+        <div class="text-horizontal-center">
+            <h1>Nested Grids</h1>
+            <p>You can also infinitely nest grids within grids</p>
+        </div>
+
+        <div class="grid">
+            <div class="col one-half">
+                <span class="demo-grid">
+
+                    <div class="grid">
+                        <div class="col one-half below-desk-one-quarter">
+                            <span class="demo-col">Resize me</span>
+                        </div>
+                        <div class="col one-half below-desk-one-quarter">
+                            <span class="demo-col">Resize me</span>
+                        </div>
+
+                        <div class="col one-half below-desk-one-quarter desk-hidden">
+                            <span class="demo-col">Magic</span>
+                        </div>
+                        <div class="col one-half below-desk-one-quarter desk-hidden">
+                            <span class="demo-col">Magic</span>
+                        </div>
+
+                        <div class="col one-quarter below-desk-full">
+                            <span class="demo-col">1</span>
+                        </div>
+                        <div class="col one-quarter below-desk-full">
+                            <span class="demo-col">2</span>
+                        </div>
+                        <div class="col one-quarter below-desk-one-half below-lap-full">
+                            <span class="demo-col">3</span>
+                        </div>
+                        <div class="col one-quarter below-desk-one-half below-lap-full">
+                            <span class="demo-col">4</span>
+                        </div>
+
+                        <div class="col desk-hidden tab-hidden mob-hidden">
+                            <div class="grid">
+                                <div class="col one-half">
+                                    <span class="demo-col">Laptop only</span>
+                                </div>
+                                <div class="col one-half">
+                                    <span class="demo-col">Laptop only</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </span>
+            </div>
+            <div class="col one-half">
+                <span class="demo-grid">
+                    <div class="grid">
+                        <div class="col one-half below-desk-one-whole">
+                            <span class="demo-col">1</span>
+                        </div>
+                        <div class="col one-half below-desk-one-whole">
+                            <span class="demo-col">2</span>
+                        </div>
+                        <div class="col one-half below-desk-one-whole">
+                            <span class="demo-col">3</span>
+                        </div>
+                        <div class="col one-half below-desk-one-whole">
+                            <span class="demo-col">4</span>
+                        </div>
+                    </div>
+
+                </span>
+            </div>
+            <div class="col one-quarter">
+                <span class="demo-grid">
+
+                </span>
+            </div>
+            <div class="col three-quarters">
+                <span class="demo-grid">
+
+                </span>
+            </div>
+        </div>
+    </div>
+</div>

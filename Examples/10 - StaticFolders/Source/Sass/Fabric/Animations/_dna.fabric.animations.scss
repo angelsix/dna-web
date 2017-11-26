@@ -1,0 +1,52 @@
+//
+//   Shake animation on hover
+//
+.shake:hover 
+{
+  animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;
+  transform: translate3d(0, 0, 0);
+}
+
+@keyframes shake 
+{
+  10%, 90%      { transform: translate3d(-1px, 0, 0); }
+  20%, 80%      { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60%      { transform: translate3d(4px, 0, 0); }
+}
+
+.slide-in-down { animation: slide-in-down 0.5s; }
+
+@keyframes slide-in-down
+{
+  0% { transform: translateY(-100%); opacity: 0; }
+  50% { opacity: 0; }
+  100% { transform: translateY(0%); opacity: 1; }
+}
+
+.slide-in-right-shake 
+{
+  animation: slide-in-right-shake $transition-normal;
+  transform: translateX(0);
+}
+
+@keyframes slide-in-right-shake
+{
+  0% { transform: translateX(-100%); opacity: 0; }  
+  70% { transform: translateX(2%); }  
+  75% { transform: translateX(-2%); }  
+  80% { transform: translateX(2%); }  
+  85% { transform: translateX(-1%); }  
+  95% { transform: translateX(1%); }  
+  100% { transform: translateX(0%); opacity: 1; }  
+}
+
+// Bubble up animation
+.bubble-up { animation: bubble-up 3s ease-in infinite; }
+
+@keyframes bubble-up
+{
+  0% { opacity: 0; }    
+  20% { opacity: 1; transform: translateY(-20%); }    
+  100% { opacity: 0; transform: translateY(-1000%); }
+}

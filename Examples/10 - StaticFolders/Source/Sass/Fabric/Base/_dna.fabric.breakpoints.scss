@@ -1,0 +1,28 @@
+/* ######################################################### */
+/*    Breakpoints                                            */
+/* ######################################################### */
+/*                                                           */
+/*    NOTE: For order of presidence to work, place the less  */
+/*    specific breakpoints first.                            */
+/*                                                           */
+/*    For example if you want to below-lap to override       */
+/*    below-desk then place the below-desk first             */
+/*                                                           */
+/* ######################################################### */
+
+$breakpoint-below-laptop: 'below-lap';
+$breakpoint-below-desktop: 'below-desk';
+
+$breakpoint-mobile: 'mob';
+$breakpoint-tablet: 'tab';
+$breakpoint-laptop: 'lap';
+$breakpoint-desktop: 'desk';
+
+$breakpoints: (
+    $breakpoint-below-desktop '(max-width: 1000px)',
+    $breakpoint-below-laptop '(max-width: 900px)',
+    $breakpoint-mobile '(max-width: 600px)',
+    $breakpoint-tablet '(min-width: 601px) and (max-width: 900px)',
+    $breakpoint-laptop '(min-width: 901px) and (max-width: 1000px)',
+    $breakpoint-desktop '(min-width: 1001px)'
+)!default;

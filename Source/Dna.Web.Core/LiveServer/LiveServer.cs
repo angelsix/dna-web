@@ -267,7 +267,7 @@ window.onload = checkForChanges;";
 
                     // Run new thread listening for content
                     // until we call Stop or Dispose
-                    Task.Run(() => ListenForContent());
+                    SafeTask.Run(() => ListenForContent());
 
                     // Set Listening flag
                     Listening = true;
@@ -291,7 +291,7 @@ window.onload = checkForChanges;";
 
                 mFolderWatcher = new FolderWatcher
                 {
-                    Filter = "*.*",
+                    Filter = "*",
                     Path = ServingDirectory,
                     UpdateDelay = 100
                 };
@@ -349,40 +349,45 @@ window.onload = checkForChanges;";
         /// </summary>
         private void ListenForContent()
         {
-            // Start new 
-            while (!Stopping && !Disposing)
+            try
             {
-                CoreLogger.Log($"LiveServer waiting for next response '{ServingDirectory}'...");
-
-                // Note: The GetContext method blocks while waiting for a request.
-                var result = mListener.BeginGetContext(new AsyncCallback((callback) =>
+                // Start new 
+                while (!Stopping && !Disposing)
                 {
-                    try
+                    CoreLogger.Log($"LiveServer waiting for next response '{ServingDirectory}'...");
+
+                    // Note: The GetContext method blocks while waiting for a request.
+                    var result = mListener.BeginGetContext(new AsyncCallback((callback) =>
                     {
-                        // See if we are stopping
-                        if (Stopping || Disposing)
-                            return;
+                        try
+                        {
+                            // See if we are stopping
+                            if (Stopping || Disposing)
+                                return;
 
-                        // Get context from result
-                        var context = ((HttpListener)callback.AsyncState).EndGetContext(callback);
+                            // Get context from result
+                            var context = ((HttpListener)callback.AsyncState).EndGetContext(callback);
 
-                        // Process it
-                        Process(context);
-                    }
-                    catch (Exception ex)
-                    {
-                        // Log it
-                        CoreLogger.Log($"LiveServer response failed. {ex.Message}", type: LogType.Warning);
-                    }
+                            // Process it
+                            Process(context);
+                        }
+                        catch (Exception ex)
+                        {
+                            // Log it
+                            CoreLogger.Log($"LiveServer response failed. {ex.Message}", type: LogType.Warning);
+                        }
 
-                }), mListener);
+                    }), mListener);
 
-                // Wait for result or stopping before moving to next loop
-                while (!Stopping && !Disposing && !result.AsyncWaitHandle.WaitOne(10));
+                    // Wait for result or stopping before moving to next loop
+                    while (!Stopping && !Disposing && !result.AsyncWaitHandle.WaitOne(10)) ;
+                }
             }
-
-            // Flag no longer listening
-            Listening = false;
+            finally
+            {
+                // Make sure regardless of errors, we stop listening once done
+                Listening = false;
+            }
         }
 
         #endregion
@@ -475,7 +480,7 @@ window.onload = checkForChanges;";
 
         private void HangUntilFileChange(HttpListenerContext context)
         {
-            Task.Run(() =>
+            SafeTask.Run(() =>
             {
                 // Log it
                 CoreLogger.Log("Waiting for file change signal...");
@@ -486,6 +491,9 @@ window.onload = checkForChanges;";
                 // If we are stopping, just return
                 if (Stopping)
                     return;
+
+                // Log it
+                CoreLogger.LogInformation("Refreshing web page request...");
 
                 // Response code OK (200)
                 context.Response.StatusCode = (int)HttpStatusCode.OK;
@@ -543,7 +551,7 @@ window.onload = checkForChanges;";
                 else
                 {
                     // Open file
-                    using (var input = new FileStream(filePath, FileMode.Open))
+                    using (var input = new FileStream(filePath, FileMode.Open, FileAccess.Read))
                     {
                         // Set content length
                         context.Response.ContentLength64 = fileInfo.Length;

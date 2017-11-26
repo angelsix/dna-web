@@ -37,7 +37,7 @@ namespace Dna.Web.Core
 
         protected override Task PreProcessFile(FileProcessingData data)
         {
-            return Task.Run(() =>
+            return SafeTask.Run(() =>
             {
                 // Set this file to partial if it starts with _
                 data.IsPartial = Path.GetFileName(data.FullPath).StartsWith("_");

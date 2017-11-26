@@ -7,6 +7,7 @@
   <InheritIgnoredWords>False</InheritIgnoredWords>
   <IgnoredWords>
     <Ignore>app</Ignore>
+    <Ignore>config</Ignore>
     <Ignore>css</Ignore>
     <Ignore>deserialize</Ignore>
     <Ignore>dna</Ignore>
@@ -15,7 +16,7 @@
     <Ignore>json</Ignore>
     <Ignore>scss</Ignore>
     <Ignore>url</Ignore>
-    <Ignore>config</Ignore>
+    <Ignore>async</Ignore>
   </IgnoredWords>
   <InheritExclusionExpressions>True</InheritExclusionExpressions>
   <InheritIgnoredFilePatterns>True</InheritIgnoredFilePatterns>

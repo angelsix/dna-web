@@ -1,0 +1,24 @@
+.particles
+{
+    // Make inner elements absolute position 
+    // based on our position, not the parent
+    position: relative;
+
+    > .bubble
+    {
+        // Position each bubble absolute
+        position: absolute;
+
+        // Animate
+        @extend .bubble-up;
+
+        // Make it invisible to start
+        opacity: 0;
+
+        // Set default bubble color
+        background: $color3;
+
+        // Make them round
+        border-radius: 100%;
+    }
+}

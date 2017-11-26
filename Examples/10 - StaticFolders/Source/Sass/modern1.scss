@@ -1,0 +1,73 @@
+@import "fabric/dna.fabric";
+
+// Mascot background
+.mascot-background
+{
+    @extend .slide-in-right-shake;
+
+    // Decent size
+    height: 600px;
+
+    // Mascot background image
+    background-image: url('/Assets/Images/mascot.png');
+
+    // Shrink to fit
+    background-size: contain;
+
+    // Don't repeat image
+    background-repeat: no-repeat;
+
+    // Keep him to the center
+    background-position: right top;
+
+    // On mobile...
+    @include media($breakpoint-mobile)
+    {
+        // Center image
+        background-position: center top;    
+    }
+}
+
+// Particles above mascots hands
+.mascot-particles
+{
+    // Add particle effects
+    @extend .particles;
+
+    // Float to the right to match background image
+    float: right;
+
+    // Height to match image
+    height: 220px;
+
+    // Percentage width to shrink with image
+    width: 70%;
+    margin-right: 11%;
+    margin-left: 19%;
+
+    // Reduce height as we shrink
+    @include media($breakpoint-below-desktop) { height: 170px; }
+    @include media($breakpoint-below-laptop) { height: 130px; }    
+ 
+    // On mobile...
+    @include media($breakpoint-mobile)
+    {
+        // Don't float
+        float: none;
+
+        // Position it absolute
+        position: absolute;
+
+        // Remove all the margins
+        margin: 0;
+
+        // Reset width
+        width: auto;
+
+        // Position in the image center
+        left: 22%;
+        right: 15%;
+
+        height: 35vw;
+    }
+}

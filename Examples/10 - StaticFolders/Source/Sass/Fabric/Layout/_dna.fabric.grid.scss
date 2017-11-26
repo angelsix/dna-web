@@ -1,0 +1,50 @@
+$fabric-grid-col-padding:   $spacing-normal;
+$fabric-grid-name:          unquote("grid");
+$fabric-grid-col-name:      unquote("col");
+$fabric-grid-max-width:     1170px;
+
+@import "dna.fabric.grid.mixins";
+@import "dna.fabric.grid.styles";
+@import "dna.fabric.grid.demo";
+
+// Add all grid classes
+@include grid-column-widths();
+@include grid-push();
+@include grid-pull();
+@include grid-horizontal-aligns();
+@include grid-vertical-aligns();
+@include grid-tiles();
+@include grid-reverse();
+
+// All grid push/pull elements should have 
+// relative position so they can be positioned
+[class*="push-"]{ position:relative; }
+[class*="pull-"]{ position:relative; }
+
+//
+// Responsive grid classes
+//
+@each $breakpoint in $breakpoints 
+{
+    // Examples
+    //   .below-lap-grid
+    //   .mob-full
+    //   .desk-tile-one-half
+    //
+
+    // Get name of each breakpoint
+    $name: nth($breakpoint, 1);
+    
+    // Add media query wrapper around contents
+    @include media($name) 
+    {
+        // Add all grid classes
+        @include grid-column-widths('#{$name}-');
+        @include grid-push('#{$name}-');
+        @include grid-pull('#{$name}-');
+        @include grid-horizontal-aligns('#{$name}-');        
+        @include grid-vertical-aligns('#{$name}-');        
+        @include grid-tiles('#{$name}-');
+        @include grid-reverse('#{$name}-');
+    }
+}

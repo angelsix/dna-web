@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Dna.Web.Core
@@ -26,6 +27,16 @@ namespace Dna.Web.Core
         /// A lock for running any commands after a configuration change
         /// </summary>
         protected object mPostConfigurationChangeLock = new object();
+
+        /// <summary>
+        /// An event for canceling out of a Console.ReadLine
+        /// </summary>
+        protected ManualResetEvent mReadLineResetEvent = new ManualResetEvent(false);
+
+        /// <summary>
+        /// True if the user requested an exit of the application
+        /// </summary>
+        protected bool mUserRequestedCancel;
 
         #endregion
 
@@ -61,6 +72,34 @@ namespace Dna.Web.Core
         /// </summary>
         public List<BaseEngine> Engines { get; set; } = new List<BaseEngine>();
 
+        /// <summary>
+        /// A list of command line arguments used when running this environment
+        /// </summary>
+        public string[] CommandLineArguments { get; set; }
+
+        /// <summary>
+        /// True if the user requested an exit of the application
+        /// </summary>
+        public bool UserRequestedExit
+        {
+            get => mUserRequestedCancel;
+            set
+            {
+                // Set value
+                mUserRequestedCancel = value;
+
+                // If it was true...
+                if (mUserRequestedCancel)
+                {
+                    // Log it
+                    CoreLogger.Log("User requested exit", type: LogType.Warning);
+
+                    // Set the reset event
+                    mReadLineResetEvent.Set();
+                }
+            }
+        }
+
         #endregion
 
         #region Constructor
@@ -83,6 +122,8 @@ namespace Dna.Web.Core
         /// <param name="commandLineArguments">Any command line arguments to pass in</param>
         public async Task RunAsync(string[] commandLineArguments = null)
         {
+            CommandLineArguments = commandLineArguments;
+
             // Log useful info
             CoreLogger.Log($"Current Directory: {EnvironmentDirectory}");
             CoreLogger.Log("");
@@ -90,7 +131,7 @@ namespace Dna.Web.Core
             #region Load Configuration
 
             // Load all dna.config files based on 
-            LoadConfigurations(commandLineArguments);
+            LoadConfigurations();
 
             // Monitor for configuration file changes and reload configurations
             var monitorFolderWatcher = new FolderWatcher
@@ -104,8 +145,13 @@ namespace Dna.Web.Core
             // Listen for configuration file changes
             monitorFolderWatcher.FileChanged += async (path) =>
             {
+                // If we are temporarily ignoring file changes...
+                if (DisableWatching)
+                    // Return
+                    return;
+
                 // Reload configurations
-                LoadConfigurations(commandLineArguments);
+                LoadConfigurations();
 
                 // Run anything that should run each time the configuration changes
                 await PostConfigurationMethods();
@@ -155,19 +201,37 @@ namespace Dna.Web.Core
                 var nextCommand = string.Empty;
 
                 // Loop until quit
-                while (true)
+                while (!UserRequestedExit)
                 {
                     CoreLogger.LogInformation("Command: ", newLine: false, faded: true);
 
-                    // Get next command
-                    nextCommand = Console.ReadLine();
+                    // Read next line or 
+                    // break if user wanted to exit
+                    if (!ReadNextLineOrExit(ref nextCommand) || nextCommand == null)
+                    {
+                        CoreLogger.Log($"Quiting due to { (UserRequestedExit ? "console quit signal" : "null line") }", type: LogType.Warning);
+
+                        // Either way a null line can only seem to come from a Ctrl+C quit so presume that means to exit
+                        // As the Ctrl+C command in Console.CancelKeyPress can come after this read line and after
+                        // we get to the check for "Press any key to exit"
+                        UserRequestedExit = true;
+
+                        break;
+                    }
+
+                    // Ignore blank commands
+                    if (string.IsNullOrEmpty(nextCommand))
+                        continue;
 
                     // See if we should quit
                     ProcessCommand(nextCommand, out bool quit);
 
                     // If the command should quit out...
                     if (quit)
+                    {
+                        CoreLogger.Log("User typed quit command", type: LogType.Diagnostic);
                         break;
+                    }
                 }
             }
 
@@ -175,21 +239,29 @@ namespace Dna.Web.Core
 
             #region Cleanup
 
+            // Log it
+            CoreLogger.Log("Cleaning up...", type: LogType.Warning);
+
             // Clean up folder watcher
+            CoreLogger.Log("Disposing Folder Watchers...", type: LogType.Warning);
             monitorFolderWatcher.Dispose();
 
             // Clean up engines
+            CoreLogger.Log("Disposing Engines...", type: LogType.Warning);
             Engines.ForEach(engine => engine.Dispose());
 
             // Stop live servers
+            CoreLogger.Log("Stopping Live Servers...", type: LogType.Warning);
             await LiveServerManager.StopAsync();
 
             // If we should wait, then wait
-            if (Configuration.ProcessAndClose == false)
+            if (!UserRequestedExit && Configuration.ProcessAndClose == false)
             {
                 Console.WriteLine("Press any key to close");
                 Console.ReadKey();
             }
+
+            CoreLogger.Log("Exiting", type: LogType.Warning);
 
             #endregion
         }
@@ -198,7 +270,7 @@ namespace Dna.Web.Core
         /// Loads all configurations from the monitor path and forms a combined final configuration
         /// </summary>
         /// <param name="commandLineArguments">Any command line arguments</param>
-        public void LoadConfigurations(string[] commandLineArguments = null)
+        public void LoadConfigurations()
         {
             lock (mConfigurationLoadLock)
             {
@@ -208,8 +280,8 @@ namespace Dna.Web.Core
                 var specificConfigurationFile = DnaSettings.SpecificConfigurationFilePath;
 
                 // Read in arguments
-                if (commandLineArguments != null)
-                    foreach (var arg in commandLineArguments)
+                if (CommandLineArguments != null)
+                    foreach (var arg in CommandLineArguments)
                     {
                         // Override specific configuration file
                         if (arg.StartsWith("config="))
@@ -230,8 +302,8 @@ namespace Dna.Web.Core
                 // Read in arguments
                 var overrides = false;
 
-                if (commandLineArguments != null)
-                    foreach (var arg in commandLineArguments)
+                if (CommandLineArguments != null)
+                    foreach (var arg in CommandLineArguments)
                     {
                         // Process and Close
                         if (arg == "/c")
@@ -427,9 +499,38 @@ namespace Dna.Web.Core
                 // Set the core logger log level to match settings now
                 CoreLogger.LogLevel = Configuration.LogLevel ?? LogLevel.All;
 
-                // Now do startup generation
-                foreach (var engine in Engines)
-                    await engine.StartupGenerationAsync();
+                // Kill any static engines
+                var staticEngines = Engines.Where(f => f is StaticEngine).ToList();
+                if (staticEngines.Count > 0)
+                {
+                    // Stop engines
+                    staticEngines.ForEach(engine => engine.Dispose());
+
+                    // Remove from list
+                    Engines.RemoveAll(engine => engine is StaticEngine);
+                }
+
+                // Add any static engines
+                Configuration.StaticFolders?.ForEach(staticFolder =>
+                {
+                    // Create new engine
+                    var engine = new StaticEngine
+                    {
+                        // Set configuration
+                        DnaEnvironment = this,
+                        StaticFolderDetails = staticFolder,
+                        CustomMonitorPath = staticFolder.SourceFolder
+                    };
+
+                    // Start the engine
+                    engine.Start();
+
+                    // Add it to list
+                    Engines.Add(engine);
+                });
+
+                // Do startup generation
+                await DoStartupGenerationAsync();
 
                 // If we are staying open...
                 if (Configuration.ProcessAndClose != true)
@@ -495,9 +596,22 @@ namespace Dna.Web.Core
                 AutoUpdateManager.CheckForUpdate();
 
                 #endregion
-
-                CoreLogger.LogInformation("Command: ", newLine: false, faded: true);
             });
+        }
+
+
+        /// <summary>
+        /// Does the startup generation to generate all files
+        /// </summary>
+        /// <returns></returns>
+        private async Task DoStartupGenerationAsync()
+        {
+            // Flag all engines as processing so the generation reports come out last
+            Engines.ForEach(engine => engine.Processing = true);
+
+            // Now do startup generation
+            foreach (var engine in Engines)
+                await engine.StartupGenerationAsync();
         }
 
         /// <summary>
@@ -615,6 +729,12 @@ namespace Dna.Web.Core
                 // Process new source command
                 ProcessCommandNewSource();
             }
+            // Regenerate all content
+            else if (command.EqualsIgnoreCase("generate"))
+            {
+                // Process generate command
+                ProcessCommandGenerate();
+            }
             else
             {
                 // Unknown command
@@ -655,6 +775,7 @@ namespace Dna.Web.Core
             CoreLogger.LogInformation("   new template [name]      Extract specified Live Template");
             CoreLogger.LogInformation("   new source               Create a new blank Live Data Source");
             CoreLogger.LogInformation("   new config               Create a new default dna.config file");
+            CoreLogger.LogInformation("   generate                 Regenerates all files for all engines");
             CoreLogger.LogInformation("   q                        Quit");
             CoreLogger.LogInformation("");
         }
@@ -750,17 +871,38 @@ namespace Dna.Web.Core
             // Resolve path based on the monitor path being the root
             destination = DnaConfiguration.ResolveFullPath(Configuration.MonitorPath, destination, true, out bool wasRelative);
 
-            // Now try extracting this template to the specified folder
-            var successful = ZipHelpers.Unzip(foundTemplate.FilePath, destination);
+            try
+            {
+                // Disable watching for now while we unzip
+                DisableWatching = true;
+                
+                // Now try extracting this template to the specified folder
+                var successful = ZipHelpers.Unzip(foundTemplate.FilePath, destination);
 
-            // If we failed...
-            if (!successful)
-                // Log it
-                CoreLogger.LogInformation($"Template not found '{name}'");
-            // If we succeeded
-            else
-                // Log it
-                CoreLogger.Log($"Template {foundTemplate.Name} successfully extracted to {destination}", type: LogType.Success);
+                // If we failed...
+                if (!successful)
+                    // Log it
+                    CoreLogger.LogInformation($"Template not found '{name}'");
+                // If we succeeded
+                else
+                    // Log it
+                    CoreLogger.Log($"Template {foundTemplate.Name} successfully extracted to {destination}", type: LogType.Success);
+            }
+            finally
+            {
+                // Wait for any pending timeouts
+                Task.Delay(Engines.Max(engine => engine.ProcessDelay) + 10).ContinueWith(async (t) =>
+                {
+                    // Re-enable watching
+                    DisableWatching = false;
+
+                    // Reload configurations
+                    LoadConfigurations();
+
+                    // Regenerate entire system
+                    await PostConfigurationMethods();
+                });
+            }
         }
 
 
@@ -1123,9 +1265,59 @@ html
             LiveDataManager.DeleteSource(foundSource.CachedFilePath, Configuration.LiveDataSources, refreshLocalSources: true);
         }
 
+
+        /// <summary>
+        /// Processes the generate command
+        /// </summary>
+        protected void ProcessCommandGenerate()
+        {
+            SafeTask.Run(async () => await DoStartupGenerationAsync());
+        }
+
         #endregion
 
         #region Private Helpers
+
+        /// <summary>
+        /// Does a <see cref="Console.ReadLine"/> that will return immediately if the
+        /// user requests a cancel with <see cref="UserRequestedExit"/>
+        /// </summary>
+        /// <param name="readLine">The line of data that was read</param>
+        /// <returns>Returns true if the line was read, false if the event was canceled</returns>
+        private bool ReadNextLineOrExit(ref string readLine)
+        {
+            // Wait for either a read line or a cancel
+            mReadLineResetEvent.Reset();
+
+            // Flag indicating success
+            var successful = false;
+
+            // Store result
+            var result = string.Empty;
+
+            // Try and read the next line
+            SafeTask.Run(() =>
+            {
+                // Read next line
+                result = Console.ReadLine();
+
+                // Flag success 
+                successful = true;
+
+                // Return function
+                mReadLineResetEvent.Set();
+            });
+
+            // Wait for it to finish, or to be canceled
+            mReadLineResetEvent.WaitOne();
+
+            // If successful, set result
+            if (successful)
+                readLine = result;
+
+            // Return if successful
+            return successful;
+        }
 
         /// <summary>
         /// Opens a folder on this machine
@@ -1220,11 +1412,16 @@ html
             // Log it
             CoreLogger.Log($"Opening VS Code for folder '{path}'...", type: LogType.Attention);
 
-            // Open VS Code
-            Process.Start(new ProcessStartInfo
+            // Open VS Code (on new task otherwise our application doesn't exit unti this does
+            var process2 = Process.Start(new ProcessStartInfo
             {
+                // IMPORTANT: If you don't specify UseShellExecute = false
+                //            and CreateNoWindow = true
+                //            then our console will never exit until VS Code is closed
+                UseShellExecute = false,
+                CreateNoWindow = true,
                 FileName = filename,
-                Arguments = $@"/C code ""{path}"""
+                Arguments = $@"/C code ""{path}""",
             });
 
             // Done

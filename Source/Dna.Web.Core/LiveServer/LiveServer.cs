@@ -291,7 +291,7 @@ window.onload = checkForChanges;";
 
                 mFolderWatcher = new FolderWatcher
                 {
-                    Filter = "*.*",
+                    Filter = "*",
                     Path = ServingDirectory,
                     UpdateDelay = 100
                 };
@@ -492,6 +492,9 @@ window.onload = checkForChanges;";
                 if (Stopping)
                     return;
 
+                // Log it
+                CoreLogger.LogInformation("Refreshing web page request...");
+
                 // Response code OK (200)
                 context.Response.StatusCode = (int)HttpStatusCode.OK;
 
@@ -548,7 +551,7 @@ window.onload = checkForChanges;";
                 else
                 {
                     // Open file
-                    using (var input = new FileStream(filePath, FileMode.Open))
+                    using (var input = new FileStream(filePath, FileMode.Open, FileAccess.Read))
                     {
                         // Set content length
                         context.Response.ContentLength64 = fileInfo.Length;

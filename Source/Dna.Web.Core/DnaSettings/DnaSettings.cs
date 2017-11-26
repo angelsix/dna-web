@@ -129,24 +129,39 @@ namespace Dna.Web.Core
         public const string ConfigurationNameLiveDataSource = "source";
 
         /// <summary>
-        /// The name of the configuration setting for a Cache Path
+        /// The name of the configuration setting for Cache Path
         /// </summary>
         public const string ConfigurationNameCachePath = "cachePath";
 
         /// <summary>
-        /// The name of the configuration setting for a Scss Output STyle
+        /// The name of the configuration setting for Scss Output Style
         /// </summary>
         public const string ConfigurationNameScssOutputStyle = "scssOutputStyle";
 
         /// <summary>
-        /// The name of the configuration setting for a Scss Generate Source Map
+        /// The name of the configuration setting for Scss Generate Source Map
         /// </summary>
         public const string ConfigurationNameScssGenerateSourceMap = "scssGenerateSourceMap";
 
         /// <summary>
-        /// The name of the configuration setting for a Open Vs Code
+        /// The name of the configuration setting for Open Vs Code
         /// </summary>
         public const string ConfigurationNameOpenVsCode = "openVsCode";
+
+        /// <summary>
+        /// The name of the configuration setting for Static Folders
+        /// </summary>
+        public const string ConfigurationNameStaticFolders = "staticFolders";
+
+        /// <summary>
+        /// The name of the configuration setting for Static Folders Source property
+        /// </summary>
+        public const string ConfigurationNameStaticFolderSource = "source";
+
+        /// <summary>
+        /// The name of the configuration setting for Static Folders Destination property
+        /// </summary>
+        public const string ConfigurationNameStaticFolderDestination = "destination";
 
         #endregion
 

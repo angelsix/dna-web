@@ -66,6 +66,8 @@ namespace Dna.Web.Core
                 WillProcessDataTags = false;
                 WillProcessMainTags = false;
                 WillProcessOutputTags = false;
+                WillProcessVariables = false;
+                WillProcessLiveVariables = false;
 
                 // Set this file to partial if it starts with _
                 // As per the Sass rule 

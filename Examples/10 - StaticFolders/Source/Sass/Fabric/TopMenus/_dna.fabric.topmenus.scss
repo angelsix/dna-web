@@ -1,0 +1,21 @@
+@import "dna.fabric.topmenu.standard";
+
+// How much to push down the main content
+// to allow fixed top menu from overlaying
+// the main content
+$top-menu-pushdown: $spacing-largest * 2; 
+
+.top-menu
+{
+    // Styling that is applied to every top menu
+
+    // Keep above everything
+    z-index: 1000;
+
+    // <main> right after a top menu...
+    & + main
+    {
+        // Push down main content as required
+        margin-top: $top-menu-pushdown;
+    }    
+}

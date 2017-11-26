@@ -1,0 +1,205 @@
+//
+//   Variables
+//
+
+// Top menu height
+$top-menu-standard-padding: $spacing-normal !default;
+$top-menu-standard-reduced-padding: $spacing-small !default;
+
+// Top menu items padding
+$top-menu-standard-reduced-item-padding: $spacing-small !default;
+
+// Logo height
+$top-menu-standard-logo-height: $spacing-largest !default;
+$top-menu-standard-reduced-logo-height: $spacing-larger !default;
+
+//
+//   Styling
+//
+.top-menu-standard
+{
+    // Extend top menu
+    @extend .top-menu;
+
+    // Smooth animations
+    transition: padding $transition-normal, color $transition-normal, background-color $transition-normal;
+
+    // Start off transparent background
+    background: transparent;
+
+    // Main bright foreground color
+    color: $color6;
+
+    // Fixed position
+    position: fixed;
+    top: 0;
+    
+    // Width 100% due to fixed removing it
+    width: 100%;
+
+    // Add top/bottom padding
+    padding: $top-menu-standard-padding 0px; 
+    
+    // Main content area (image and menu items
+    > div
+    {
+        // Keep menu within grid width
+        @extend .grid-wrapper;   
+
+        > img
+        {
+            // Smooth transitions
+            transition: height  $transition-normal;
+
+            // Make logo shake on hover
+            @extend .shake;
+
+            // Make image match height of container
+            height: $top-menu-standard-logo-height;
+            width: auto;
+        }
+
+        // Menu Icon when < laptop
+        > .menu-icon
+        {
+            // Smooth animations
+            transition: padding $transition-normal;
+    
+            // Hide by default
+            @extend .hidden;
+
+            // Alternative link color
+            > a 
+            {
+                // Smooth transitions
+                transition: transform $transition-normal;
+
+                // Bright general color
+                color: $color6;
+
+                // Inline block so its scalable
+                display: inline-block;
+
+                // When expanded go main bright color
+                // On hover go main bright color
+                &.expanded, &:hover 
+                {
+                    // Main bright color 
+                    color: $color2; 
+
+                    // Grow a bit
+                    transform-origin: 50% 50%;
+                    transform: scale(1.3, 1.3);
+                }
+            }
+
+            // Show when below laptop
+            @extend .#{$breakpoint-below-laptop}-show-block;
+
+            // Float menu icon to right
+            float: right;
+
+            // Nice big font
+            font-size: $font-larger;                        
+
+            // Padding to match main menu items
+            padding: $spacing-small;
+
+            // Verticle middle to fix baseline position
+            vertical-align: middle;
+        }
+        
+        // Menu items
+        > ul
+        {
+            // Transition slide-in smoothly
+            transition: transform $transition-normal, opacity $transition-normal;      
+            
+            // Make horizontal menu
+            @extend .horizontal-menu;
+
+            // Right align
+            float: right;
+
+            // When menu is below laptop
+            @include media($breakpoint-below-laptop)
+            {
+                // Remove float
+                float: none;
+
+                // Go full width
+                position: absolute;
+                left: 0;
+                right: 0;
+
+                // Make height fill page
+                // (height is relative to top navigation bar so is not that large
+                //  hance the reason for large value)
+                min-height: 2000%;
+
+                // Add background color now we are absolute 
+                // (so we can slide in/out without effecting parents height)
+                background: $color1;
+
+                // Hide off to the left by default
+                transform: translate(-100%, 0);
+            }
+
+            // For each menu item
+            > li 
+            {
+                // Display as list item
+                display: list-item;
+
+                // Float left
+                float: left;
+
+                // Hide below laptop
+                @include media ($breakpoint-below-laptop)
+                {
+                    float: none;
+                    text-align: center;
+                }
+            }
+
+            // When expanded show all menu items
+            &.expanded
+            {
+                @include media ($breakpoint-below-laptop)
+                {
+                    // Slide in when expanded
+                    transform: translate(0%, 0);
+                }
+            }
+        }
+    }
+
+    // Reduce size of menu
+    &.reduced
+    {
+        // Main background color
+        background: $color1;
+
+        // Reduce padding
+        padding: $top-menu-standard-reduced-padding 0px;
+
+        > div
+        {
+            > img
+            {
+                // Make image smaller
+                height: $top-menu-standard-reduced-logo-height;                            
+            }
+
+            > .menu-icon
+            {
+                padding: $top-menu-standard-reduced-item-padding;                
+            }
+
+            > ul > li > a
+            {
+                padding: $top-menu-standard-reduced-item-padding;
+            }
+        }
+    }
+}

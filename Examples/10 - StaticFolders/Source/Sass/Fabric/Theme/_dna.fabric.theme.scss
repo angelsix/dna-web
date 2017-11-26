@@ -1,0 +1,48 @@
+html
+{
+    background: $color1;
+    color: $color2;
+}
+
+//
+//   Paragraphs
+//
+p
+{
+    color: $color6;    
+}
+
+//
+//   Anchors
+//
+a
+{
+    // No underline
+    text-decoration: none;
+
+    // Secondary dull color
+    color: $color5;
+
+    // On hover...
+    &:hover
+    {
+        // Secondary bright color on hover
+        color: $color3;
+    }
+
+    // Animate color change smoothly
+    transition: color $transition-normal;
+
+    &.alternative
+    {
+        // General bright color
+        color: $color6;
+
+        // On hover...
+        &:hover
+        {
+            // Main bright color on hover
+            color: $color2;
+        }
+    }
+}

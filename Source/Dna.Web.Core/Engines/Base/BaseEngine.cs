@@ -18,6 +18,21 @@ namespace Dna.Web.Core
         #region Protected Members
 
         /// <summary>
+        /// A Guid to track the last updated file change call
+        /// </summary>
+        protected Guid mLastUpdateId;
+
+        /// <summary>
+        /// A list of files that have changed and need processing on the next loop
+        /// </summary>
+        protected List<string> mFilesToProcess = new List<string>();
+
+        /// <summary>
+        /// A lock for the Files to Process list
+        /// </summary>
+        protected object mFilesToProcessLock = new object();
+
+        /// <summary>
         /// A list of folder watchers that listen out for file changes of the given extensions
         /// </summary>
         protected List<FolderWatcher> mWatchers;
@@ -56,12 +71,12 @@ namespace Dna.Web.Core
         protected string mDnaVariableDateRegex = @"Date\(""(.+?(?=""\)))""\)";
 
         /// <summary>
-        /// The name of the Dna Varaible for getting the executing current directory (project path)
+        /// The name of the Dna Variable for getting the executing current directory (project path)
         /// </summary>
         protected string mDnaVariableProjectPath = "ProjectPath";
 
         /// <summary>
-        /// The name of the Dna Varaible for getting the full file path of the file this variable resides inside
+        /// The name of the Dna Variable for getting the full file path of the file this variable resides inside
         /// </summary>
         protected string mDnaVariableFilePath = "FilePath";
 
@@ -88,9 +103,39 @@ namespace Dna.Web.Core
         public bool WillProcessOutputTags { get; set; } = true;
 
         /// <summary>
+        /// Flag indicating if the <see cref="GenerateOutput(FileProcessingData, FileOutputData)"/> function will
+        /// extract variables from the files when processing files in this engine
+        /// </summary>
+        public bool WillProcessVariables { get; set; } = true;
+
+        /// <summary>
+        /// Flag indicating if the <see cref="GenerateOutput(FileProcessingData, FileOutputData)"/> function will
+        /// process live variables from the files when processing files in this engine
+        /// </summary>
+        public bool WillProcessLiveVariables { get; set; } = true;
+
+        /// <summary>
+        /// Flag indicating if the <see cref="GenerateOutput(FileProcessingData, FileOutputData)"/> function will
+        /// read the files contents into memory as <see cref="FileProcessingData.UnprocessedFileContents"/> 
+        /// from the files when processing files in this engine
+        /// </summary>
+        public bool WillReadFileIntoMemory { get; set; } = true;
+
+        /// <summary>
         /// A cached list of all monitored files since the last file change
         /// </summary>
         public List<(string Path, List<string> References)> AllMonitoredFiles { get; set; } = new List<(string Path, List<string> References)>();
+
+        /// <summary>
+        /// If true, causes a `generate` command to run if any folder inside the watched folder gets renamed
+        /// to ensure the entire structure is still valid
+        /// </summary>
+        public bool RegenerateOnFolderRename { get; set; } = true;
+
+        /// <summary>
+        /// If true, causes a file change event when a file is renamed
+        /// </summary>
+        public bool TreatFileRenameAsChange { get; set; } = true;
 
         #endregion
 
@@ -100,6 +145,11 @@ namespace Dna.Web.Core
         /// The human-readable name of this engine
         /// </summary>
         public abstract string EngineName { get; }
+
+        /// <summary>
+        /// A flag indicating if this engine is busy processing something
+        /// </summary>
+        public bool Processing { get; set; }
 
         /// <summary>
         /// The DnaWeb Environment this engine is running inside of
@@ -127,6 +177,40 @@ namespace Dna.Web.Core
         /// The unique key to lock file change processes so that only one process loop happens at once
         /// </summary>
         public string FileChangeLockKey => "FileChangeLock";
+
+        /// <summary>
+        /// A monitor path to use instead of the <see cref="DnaEnvironment"/> monitor path
+        /// </summary>
+        public string CustomMonitorPath { get; set; }
+
+        /// <summary>
+        /// The monitor path to use for this engine
+        /// </summary>
+        public string ResolvedMonitorPath => CustomMonitorPath ?? DnaEnvironment?.Configuration.MonitorPath;
+
+        /// <summary>
+        /// The results of the last generation run
+        /// for the generated files
+        /// </summary>
+        public List<string> LastGenerationGeneratedFiles { get; private set; }
+
+        /// <summary>
+        /// The results of the last generation run
+        /// for the processed files
+        /// </summary>
+        public List<string> LastGenerationProcessedFiles { get; private set; }
+
+        /// <summary>
+        /// The results of the last generation run
+        /// for the processed configurations
+        /// </summary>
+        public Dictionary<string, DnaConfiguration> LastGenerationProcessedConfigurations { get; private set; }
+
+        /// <summary>
+        /// The results of the last generation run
+        /// for the processed results
+        /// </summary>
+        public List<EngineProcessResult> LastGenerationProcessedResults { get; set; }
 
         #endregion
 
@@ -264,8 +348,10 @@ namespace Dna.Web.Core
             if (!FileManager.FileExists(processingData.FullPath))
                 return new EngineProcessResult { Success = false, Path = processingData.FullPath, Error = "File no longer exists" };
 
-            // Read all the file into memory (it's ok we will never have large files they are text web files)
-            processingData.UnprocessedFileContents = await FileManager.ReadAllTextAsync(processingData.FullPath);
+            // If this file should be read into memory
+            if (WillReadFileIntoMemory)
+                // Read all the file into memory (it's OK we will never have large files they are text web files)
+                processingData.UnprocessedFileContents = await FileManager.ReadAllTextAsync(processingData.FullPath);
 
             #endregion
 
@@ -303,13 +389,13 @@ namespace Dna.Web.Core
             // Process any Live Variables
             // If we process any, the file will of been updated and saved
             // and will get picked up and re-processed... so return here
-            if (await ProcessLiveVariablesAsync(processingData, logPrefix))
-                return new EngineProcessResult { Success = true, Path = path };
+            if (WillProcessLiveVariables && await ProcessLiveVariablesAsync(processingData, logPrefix))
+                    return new EngineProcessResult { Success = true, Path = path };
 
-
-            // Find all outputs
+            // If we should process the output tags...
             if (WillProcessOutputTags)
             {
+                // Process output tags
                 ProcessOutputTags(processingData);
 
                 // If it failed
@@ -332,9 +418,10 @@ namespace Dna.Web.Core
             // Any output path processing
             await PostProcessOutputPaths(processingData);
 
-            // Process base tags
+            // If we should process the main tags...
             if (WillProcessMainTags)
             {
+                // Process main tags
                 ProcessMainTags(processingData);
 
                 // If it failed
@@ -354,6 +441,7 @@ namespace Dna.Web.Core
                 }
             }
 
+            // If we should process the data tags...
             if (WillProcessDataTags)
             {
                 // Process variables and data
@@ -402,7 +490,7 @@ namespace Dna.Web.Core
 
             #region Generate Outputs
 
-            // All ok, generate files if not a partial file
+            // All OK, generate files if not a partial file
             if (!processingData.IsPartial)
             {
                 // Generate each output
@@ -442,8 +530,8 @@ namespace Dna.Web.Core
                     // Save the contents
                     try
                     {
-                        // Save the contents
-                        FileManager.SaveFile(outputPath.CompiledContents, outputPath.FullPath);
+                        // Save to file
+                        await SaveFileContents(processingData, outputPath);
 
                         // Any pre processing
                         await PostSaveFile(processingData, outputPath);
@@ -502,6 +590,11 @@ namespace Dna.Web.Core
                 //       so the inner function will add to them the generated and processed files
                 //       no need to add them ourselves here
                 var result = await ProcessFileChangedAsync(reference, generatedFiles, processedFiles, processedConfigurations, referenceLoopLevel + 1);
+
+                // If a reference fails to process
+                // return that result
+                if (!result.Success)
+                    return result;
             }
 
             #endregion
@@ -563,7 +656,7 @@ namespace Dna.Web.Core
             var currentDirectory = DnaConfiguration.ResolveFullPath(string.Empty, Path.GetDirectoryName(path), false, out bool wasRelative);
 
             // If this path is not within the monitor path (somehow?) then just return this folder
-            if (!currentDirectory.StartsWith(DnaEnvironment?.Configuration.MonitorPath))
+            if (!currentDirectory.StartsWith(ResolvedMonitorPath))
             {
                 // Break for developer as this is unusual
                 Debugger.Break();
@@ -578,7 +671,7 @@ namespace Dna.Web.Core
                 var configurationFiles = new List<string>();
 
                 // Get all directories until we hit the monitor path
-                while (currentDirectory != DnaEnvironment?.Configuration.MonitorPath)
+                while (currentDirectory != ResolvedMonitorPath)
                 {
                     // Add the current folders configuration file
                     configurationFiles.Add(Path.Combine(currentDirectory, DnaSettings.ConfigurationFileName));
@@ -612,7 +705,7 @@ namespace Dna.Web.Core
 
             // TODO: Add async lock here to prevent multiple calls
 
-            // Dipose of any previous engine setup
+            // Dispose of any previous engine setup
             Dispose();
 
             // Make sure we have extensions
@@ -623,25 +716,43 @@ namespace Dna.Web.Core
             Started();
 
             // Log the message
-            Log($"Listening to '{DnaEnvironment?.Configuration.MonitorPath}'...", type: LogType.Information);
+            Log($"Listening to '{ResolvedMonitorPath}'...", type: LogType.Information);
             LogTabbed($"Delay", $"{ProcessDelay}ms", 1);
 
             // Create a new list of watchers
-            mWatchers = new List<FolderWatcher>();
-
-            // We need to listen out for file changes per extension
-            EngineExtensions.ForEach(extension => mWatchers.Add(new FolderWatcher
+            mWatchers = new List<FolderWatcher>
             {
-                Filter = "*" + extension,
-                Path = DnaEnvironment?.Configuration.MonitorPath,
-                UpdateDelay = ProcessDelay
-            }));
+
+                // We need to listen out for file changes per extension
+                //EngineExtensions.ForEach(extension => mWatchers.Add(new FolderWatcher
+                //{
+                //    Filter = "*" + extension,
+                //    Path = ResolvedMonitorPath,
+                //    UpdateDelay = ProcessDelay
+                //}));
+
+                // Add watcher to watch for everything
+                new FolderWatcher
+                {
+                    Filter = "*",
+                    Path = ResolvedMonitorPath,
+                    UpdateDelay = ProcessDelay
+                }
+            };
 
             // Listen on all watchers
             mWatchers.ForEach(watcher =>
             {
                 // Listen for file changes
-                watcher.FileChanged += Watcher_FileChangedAsync;
+                watcher.FileChanged += Watcher_FileChanged;
+
+                // Listen for deletions
+                watcher.FileDeleted += Watcher_FileDeletedAsync;
+                watcher.FolderDeleted += Watcher_FolderDeletedAsync;
+
+                // Listen for renames / moves
+                watcher.FileRenamed += Watcher_FileRenamedAsync;
+                watcher.FolderRenamed += Watcher_FolderRenamedAsync;
 
                 // Inform listener
                 StartedWatching(watcher.Filter);
@@ -662,32 +773,57 @@ namespace Dna.Web.Core
         /// </summary>
         public async Task StartupGenerationAsync()
         {
-            // If there is nothing to do, just return
-            if (DnaEnvironment?.Configuration.GenerateOnStart == GenerateOption.None)
-                return;
-
-            // Find all paths
-            await FindAllMonitoredFilesAsync();
-
-            // Keep a log of processed and generated info
-            var generatedFiles = new List<string>();
-            var processedFiles = new List<string>();
-            var processedConfigurations = new Dictionary<string, DnaConfiguration>();
-
-            // For each file
-            foreach (var file in AllMonitoredFiles)
+            try
             {
-                // Don't process files twice
-                if (generatedFiles.Any(f => f.EqualsIgnoreCase(file.Path)))
-                    continue;
+                // If there is nothing to do, just return
+                if (DnaEnvironment?.Configuration.GenerateOnStart == GenerateOption.None)
+                    return;
 
-                // Lock this from running more than one file processing at a time...
-                var result = await AsyncAwaitor.AwaitResultAsync(FileChangeLockKey, () =>
+                // Update all monitored files
+                await FindAllMonitoredFilesAsync();
+
+                // Process files
+                await ProcessAllFileChangesAsync(AllMonitoredFiles.Select(f => f.Path).ToList());
+            }
+            finally
+            {
+                // Clear processing flag
+                Processing = false;
+            }
+        }
+
+        /// <summary>
+        /// Shows a generation report of the last generation 
+        /// of the processed results to the log
+        /// </summary>
+        protected void OutputGenerationReport()
+        {
+            CoreLogger.LogInformation($"  {EngineName} Generation Report - {LastGenerationGeneratedFiles?.Count} generated files, {LastGenerationProcessedFiles?.Count} processed files");
+
+            // Get any failed results
+            var failedFiles = LastGenerationProcessedResults?.Where(result => !result.Success).ToList();
+            if (failedFiles.Count > 0)
+            {
+                // Output title
+                CoreLogger.LogInformation("");
+                CoreLogger.Log($"{failedFiles.Count} files failed to process", type: LogType.Error);
+
+                // Output each
+                failedFiles.ForEach(failedFile =>
                 {
-                    // Process file
-                    return ProcessFileChangedAsync(file.Path, generatedFiles, processedFiles, processedConfigurations);
+                    // Space above
+                    CoreLogger.Log("", type: LogType.Error);
+
+                    // File path
+                    CoreLogger.LogTabbed($"{failedFile.Path}", string.Empty, 1, LogType.Error);
+
+                    // Error Message
+                    CoreLogger.LogTabbed($"{failedFile.Error}", string.Empty, 1, LogType.Error);
                 });
-            };
+            }
+
+            // Spacer
+            CoreLogger.LogInformation("");
         }
 
         #endregion
@@ -698,27 +834,152 @@ namespace Dna.Web.Core
         /// Fired when a watcher has detected a file change
         /// </summary>
         /// <param name="path">The path of the file that has changed</param>
-        private async void Watcher_FileChangedAsync(string path)
+        private void Watcher_FileChanged(string path)
         {
-            // If we are temporarily ignoring file changes...
-            if (DnaEnvironment?.DisableWatching == true)
-                // Return
-                return;
-
-            // Update all monitored files (used in searching for references)
-            await FindAllMonitoredFilesAsync();
-
-            // Keep a list of processed and generated files
-            var generatedFiles = new List<string>();
-            var processedFiles = new List<string>();
-            var processedConfigurations = new Dictionary<string, DnaConfiguration>();
-
-            // Lock this from running more than one file processing at a time...
-            await AsyncAwaitor.AwaitAsync(FileChangeLockKey, () =>
+            try
             {
-                // Process the file
-                return ProcessFileChangedAsync(path, generatedFiles, processedFiles, processedConfigurations);
-            });
+                // If we are temporarily ignoring file changes...
+                if (DnaEnvironment?.DisableWatching == true)
+                    // Return
+                    return;
+
+                // Check if this file is a monitored type
+                var filename = Path.GetFileName(path);
+                if (!EngineExtensions.Any(ex => ex == "*.*" ? true : Regex.IsMatch(filename, ex)))
+                    return;
+
+                // For a file change, we want to wait until no more file changes happen
+                // for 100ms (otherwise we re-process files lots of times instead of 
+                // batching all changes up into one grouped run)
+
+                // Add this file to the list to be processed if not already
+                lock (mFilesToProcessLock)
+                {
+                    // Check if we already have this file in the list to process
+                    // NOTE: Case-sensitive check for Linux support
+                    if (mFilesToProcess.Any(f => string.Equals(f, path, StringComparison.InvariantCulture)))
+                        return;
+
+                    // Add this file to the list to be processed
+                    mFilesToProcess.Add(path);
+
+                    // Create new change Id for this call
+                    var updateId = Guid.NewGuid();
+                    mLastUpdateId = updateId;
+
+                    // Wait the delay period
+                    Task.Delay(Math.Max(1, ProcessDelay)).ContinueWith(async (t) =>
+                    {
+                        // Check if the last update Id still matches
+                        // meaning no updates since that time
+                        if (updateId != mLastUpdateId)
+                            // If there was another change, ignore this one
+                            return;
+
+                        // If we are temporarily ignoring file changes...
+                        if (DnaEnvironment?.DisableWatching == true)
+                            // Return
+                            return;
+
+                        // Store files to process in this list
+                        var filesToProcess = new List<string>();
+
+                        // Lock, clone and clear process list
+                        lock (mFilesToProcessLock)
+                        {
+                            filesToProcess = mFilesToProcess.ToList();
+                            mFilesToProcess = new List<string>();
+                        }
+
+                        // Settle time reached, so fire off the change event
+                        if (filesToProcess.Count > 0)
+                            await ProcessAllFileChangesAsync(filesToProcess);
+                    });
+
+                }
+            }
+            catch (Exception ex)
+            {
+                CoreLogger.Log($"Unexpected exception in {nameof(Watcher_FileChanged)}. {ex.Message}", type: LogType.Error);
+            }
+        }
+
+        /// <summary>
+        /// Processes all files that have changed since the last process delay
+        /// </summary>
+        /// <param name="filesToProcess">A list of files to process</param>
+        /// <returns></returns>
+        protected async Task ProcessAllFileChangesAsync(List<string> filesToProcess)
+        {
+            try
+            {
+                // Flag we are processing
+                Processing = true;
+
+                // Clear last processed details
+                LastGenerationGeneratedFiles = new List<string>();
+                LastGenerationProcessedFiles = new List<string>();
+                LastGenerationProcessedConfigurations = new Dictionary<string, DnaConfiguration>();
+                LastGenerationProcessedResults = new List<EngineProcessResult>();
+
+                // Lock this from running more than one file processing at a time...
+                await AsyncAwaitor.AwaitAsync(FileChangeLockKey, async () =>
+                {
+                    // If we are temporarily ignoring file changes...
+                    if (DnaEnvironment?.DisableWatching == true)
+                        // Return
+                        return;
+
+                    CoreLogger.LogInformation($"====================================");
+                    CoreLogger.LogInformation($"  {EngineName} Engine Processing {filesToProcess.Count} File Changes ");
+                    CoreLogger.LogInformation($"");
+
+                    // Update all monitored files (used in searching for references)
+                    await FindAllMonitoredFilesAsync();
+
+                    // Keep a list of processed and generated files
+                    var generatedFiles = new List<string>();
+                    var processedFiles = new List<string>();
+                    var processedConfigurations = new Dictionary<string, DnaConfiguration>();
+                    var processedResults = new List<EngineProcessResult>();
+
+                    foreach (var file in filesToProcess)
+                    {
+                        // Don't process files twice
+                        if (generatedFiles.Any(f => f.EqualsIgnoreCase(file)))
+                            continue;
+
+                        // Process file
+                        var processedResult = await ProcessFileChangedAsync(file, generatedFiles, processedFiles, processedConfigurations);
+                        processedResults.Add(processedResult);
+                    };
+
+                    // Set last processed details
+                    LastGenerationGeneratedFiles = generatedFiles.ToList();
+                    LastGenerationProcessedFiles = processedFiles.ToList();
+                    LastGenerationProcessedConfigurations = processedConfigurations;
+                    LastGenerationProcessedResults = processedResults.ToList();
+                });
+            }
+            finally
+            {
+
+                CoreLogger.LogInformation($"");
+                CoreLogger.LogInformation($"  {EngineName} Engine Process Done  ");
+                CoreLogger.LogInformation($"====================================");
+                CoreLogger.LogInformation($"");
+
+                // Wait for 50ms
+                await Task.Delay(50);
+
+                // If all engines are no longer busy, output the generation log
+                if (!DnaEnvironment.Engines.Any(engine => engine != this && engine.Processing))
+                    // Output the generation report of each engine
+                    DnaEnvironment.Engines.ForEach(engine => engine.OutputGenerationReport());
+
+                // Set processing to false
+                Processing = false;
+            }
         }
 
         /// <summary>
@@ -756,8 +1017,11 @@ namespace Dna.Web.Core
                     // Inform listeners
                     ProcessFailed(result);
 
-                    // Log the message
-                    Log($"{logPrefix}Failed to processed file {path}", message: result.Error, type: LogType.Error);
+                    // Log if this result is for this file
+                    // (otherwise it was already logged)
+                    if (string.Equals(result.Path, path, StringComparison.InvariantCulture))
+                        // Log the message
+                        Log($"{logPrefix}Failed to processed file {path}", message: result.Error, type: LogType.Error);
                 }
 
                 return result;
@@ -784,6 +1048,149 @@ namespace Dna.Web.Core
             }
         }
 
+        #endregion
+
+        #region File/Folder Deleted
+
+        /// <summary>
+        /// Fired when the watcher has detected a file deletion
+        /// </summary>
+        /// <param name="path">The path of the file that has been deleted</param>
+        private async void Watcher_FileDeletedAsync(string path)
+        {
+            try
+            {
+                // If we are temporarily ignoring file changes...
+                if (DnaEnvironment?.DisableWatching == true)
+                    // Return
+                    return;
+
+                // Lock this from running more than one file processing at a time...
+                await AsyncAwaitor.AwaitAsync(FileChangeLockKey, () =>
+                {
+                    // Process the file deletion
+                    return ProcessFileDeletedAsync(path);
+                });
+            }
+            catch (Exception ex)
+            {
+                CoreLogger.Log($"Unexpected exception in {nameof(Watcher_FileDeletedAsync)}. {ex.Message}", type: LogType.Error);
+            }
+        }
+
+        /// <summary>
+        /// What to do when a watched file is deleted
+        /// </summary>
+        /// <param name="path">The path to the deleted file</param>
+        /// <returns></returns>
+        protected virtual Task ProcessFileDeletedAsync(string path)
+        {
+            // Do nothing by default
+            return Task.FromResult(0);
+        }
+
+        /// <summary>
+        /// Fired when the watcher has detected a folder deletion
+        /// </summary>
+        /// <param name="path">The path of the folder that has been deleted</param>
+        private async void Watcher_FolderDeletedAsync(string path)
+        {
+            try
+            {
+                // If we are temporarily ignoring file changes...
+                if (DnaEnvironment?.DisableWatching == true)
+                    // Return
+                    return;
+
+                // Lock this from running more than one file/folder processing at a time...
+                await AsyncAwaitor.AwaitAsync(FileChangeLockKey, () =>
+                {
+                    // Process the folder deletion
+                    return ProcessFolderDeletedAsync(path);
+                });
+            }
+            catch (Exception ex)
+            {
+                CoreLogger.Log($"Unexpected exception in {nameof(Watcher_FolderDeletedAsync)}. {ex.Message}", type: LogType.Error);
+            }
+        }
+
+        /// <summary>
+        /// What to do when a watched folder is deleted
+        /// </summary>
+        /// <param name="path">The path to the deleted folder</param>
+        /// <returns></returns>
+        protected virtual Task ProcessFolderDeletedAsync(string path)
+        {
+            // Do nothing by default
+            return Task.FromResult(0);
+        }
+
+        #endregion
+
+        #region File/Folder Renamed/Moved
+
+        /// <summary>
+        /// Fired when the watcher has detected a file rename/move
+        /// </summary>
+        /// <param name="details">Details of the file rename/move operation</param>
+        private async void Watcher_FileRenamedAsync((string from, string to) details)
+        {
+            // If we are temporarily ignoring file changes...
+            if (DnaEnvironment?.DisableWatching == true)
+                // Return
+                return;
+
+            // Process file rename
+            await ProcessFileRenamedAsync(details);
+
+            // If we should treat a rename as a file change
+            if (TreatFileRenameAsChange)
+                // And let system know the new file is effectively a change
+                Watcher_FileChanged(details.to);
+        }
+
+        /// <summary>
+        /// Fired when the watcher has detected a file rename/move
+        /// </summary>
+        /// <param name="details">Details of the file rename/move operation</param>
+        /// <returns></returns>
+        protected virtual Task ProcessFileRenamedAsync((string from, string to) details)
+        {
+            // Do nothing by default
+            return Task.FromResult(0);
+        }
+
+        /// <summary>
+        /// Fired when the watcher has detected a folder rename/move
+        /// </summary>
+        /// <param name="details">Details of the folder rename/move operation</param>
+        private async void Watcher_FolderRenamedAsync((string from, string to) details)
+        {
+            // If we are temporarily ignoring file changes...
+            if (DnaEnvironment?.DisableWatching == true)
+                // Return
+                return;
+
+            // If we should regenerate...
+            if (RegenerateOnFolderRename)
+                // Run the regeneration
+                await StartupGenerationAsync();
+
+            // Call folder rename function
+            await ProcessFolderRenamedAsync(details);
+        }
+
+        /// <summary>
+        /// Fired when the watcher has detected a folder rename/move
+        /// </summary>
+        /// <param name="details">Details of the folder rename/move operation</param>
+        /// <returns></returns>
+        protected virtual Task ProcessFolderRenamedAsync((string from, string to) details)
+        {
+            // Do nothing by default
+            return Task.FromResult(0);
+        }
         #endregion
 
         #region Command Tags
@@ -1476,7 +1883,7 @@ namespace Dna.Web.Core
             var contents = output.FileContents;
 
             // Go though all matches
-            while (match == null || match.Success)
+            while (WillProcessVariables && (match == null || match.Success))
             {
                 // Find all variables
                 match = Regex.Match(contents, mVariableUseRegex);
@@ -1645,7 +2052,26 @@ namespace Dna.Web.Core
         /// <returns></returns>
         protected string GetDefaultOutputPath(FileProcessingData data)
         {
-            return Path.Combine(data.LocalConfiguration.OutputPath, Path.GetFileNameWithoutExtension(data.FullPath) + OutputExtension);
+            return Path.Combine(data.LocalConfiguration.OutputPath, OutputExtension == null ? Path.GetFileName(data.FullPath) : Path.GetFileNameWithoutExtension(data.FullPath) + OutputExtension);
+        }
+
+        #endregion
+
+        #region Save Output
+
+        /// <summary>
+        /// Saves the files compiled contents to the output location
+        /// </summary>
+        /// <param name="processingData">The processing data</param>
+        /// <param name="outputPath">The output path information</param>
+        /// <returns></returns>
+        public virtual Task SaveFileContents(FileProcessingData processingData, FileOutputData outputPath)
+        {
+            return SafeTask.Run(() =>
+            {
+                // Save the contents
+                FileManager.SaveFile(outputPath.CompiledContents, outputPath.FullPath);
+            });
         }
 
         #endregion
@@ -1841,8 +2267,9 @@ namespace Dna.Web.Core
             AllMonitoredFiles.Clear();
 
             // Get all monitored files
-            var monitoredFiles = FileHelpers.GetDirectoryFiles(DnaEnvironment?.Configuration.MonitorPath, "*.*")
-                           .Where(file => EngineExtensions.Any(ex => Regex.IsMatch(Path.GetFileName(file), ex)))
+            var monitoredFiles = FileHelpers.GetDirectoryFiles(ResolvedMonitorPath, "*.*")
+                           .Where(file => EngineExtensions.Any(ex => ex == "*.*" ? true : Regex.IsMatch(Path.GetFileName(file), ex)))
+                           .Distinct()
                            .ToList();
 
             // For each find their references

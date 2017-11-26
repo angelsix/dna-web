@@ -1,4 +1,5 @@
 ﻿using Dna.Web.Core;
+using System;
 using System.Threading.Tasks;
 
 namespace Dna.Web.CommandLine
@@ -13,6 +14,11 @@ namespace Dna.Web.CommandLine
         static async Task RunAsync(string[] args)
         {
             var environment = new DnaEnvironment();
+
+            Console.CancelKeyPress += (s, e) =>
+            {
+                environment.UserRequestedExit = true;
+            };
 
             await environment.RunAsync(args);
         }

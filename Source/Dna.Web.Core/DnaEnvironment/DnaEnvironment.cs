@@ -224,7 +224,7 @@ namespace Dna.Web.Core
                         continue;
 
                     // See if we should quit
-                    ProcessCommand(nextCommand, out bool quit);
+                    ProcessCommand(nextCommand, out var quit);
 
                     // If the command should quit out...
                     if (quit)
@@ -339,7 +339,7 @@ namespace Dna.Web.Core
                             var unresolvedPath = Configuration.MonitorPath;
 
                             // Resolve any relative paths
-                            Configuration.MonitorPath = DnaConfiguration.ResolveFullPath(EnvironmentDirectory, unresolvedPath, false, out bool wasRelative);
+                            Configuration.MonitorPath = DnaConfiguration.ResolveFullPath(EnvironmentDirectory, unresolvedPath, false, out var wasRelative);
 
                             // Log it
                             CoreLogger.LogTabbed("Argument Override MonitorPath", Configuration.MonitorPath, 1);
@@ -351,7 +351,7 @@ namespace Dna.Web.Core
                         else if (arg.StartsWith("logLevel="))
                         {
                             // Try get value
-                            if (Enum.TryParse<LogLevel>(arg.Substring(arg.IndexOf("=") + 1), out LogLevel result))
+                            if (Enum.TryParse<LogLevel>(arg.Substring(arg.IndexOf("=") + 1), out var result))
                             {
                                 // Set new value
                                 Configuration.LogLevel = result;
@@ -368,7 +368,7 @@ namespace Dna.Web.Core
                         {
                             // Set path (and resolve if relative)
                             var unresolvedPath = arg.Substring(arg.IndexOf("=") + 1);
-                            Configuration.OutputPath = DnaConfiguration.ResolveFullPath(EnvironmentDirectory, unresolvedPath, true, out bool wasRelative);
+                            Configuration.OutputPath = DnaConfiguration.ResolveFullPath(EnvironmentDirectory, unresolvedPath, true, out var wasRelative);
 
                             // Log it
                             CoreLogger.LogTabbed("Argument Override Output Path", Configuration.OutputPath, 1);
@@ -381,7 +381,7 @@ namespace Dna.Web.Core
                         {
                             // Set Path (and resolve if relative)
                             var unresolvedPath = arg.Substring(arg.IndexOf("=") + 1);
-                            Configuration.CachePath = DnaConfiguration.ResolveFullPath(EnvironmentDirectory, unresolvedPath, true, out bool wasRelative);
+                            Configuration.CachePath = DnaConfiguration.ResolveFullPath(EnvironmentDirectory, unresolvedPath, true, out var wasRelative);
 
                             // Log it
                             CoreLogger.LogTabbed("Argument Override Cache Path", Configuration.CachePath, 1);
@@ -393,7 +393,7 @@ namespace Dna.Web.Core
                         else if (arg.StartsWith("scssOutputStyle="))
                         {
                             // Try and parse it
-                            if (Enum.TryParse<ScssOutputStyle>(arg.Substring(arg.IndexOf("=") + 1), out ScssOutputStyle scssOutputStyle))
+                            if (Enum.TryParse<ScssOutputStyle>(arg.Substring(arg.IndexOf("=") + 1), out var scssOutputStyle))
                             {
                                 // Set new style
                                 Configuration.ScssOutputStyle = scssOutputStyle;
@@ -409,7 +409,7 @@ namespace Dna.Web.Core
                         else if (arg.StartsWith("scssGenerateSourceMap="))
                         {
                             // Try and parse it
-                            if (bool.TryParse(arg.Substring(arg.IndexOf("=") + 1), out bool generateMap))
+                            if (bool.TryParse(arg.Substring(arg.IndexOf("=") + 1), out var generateMap))
                             {
                                 // Set new value
                                 Configuration.ScssGenerateSourceMaps = generateMap;
@@ -425,7 +425,7 @@ namespace Dna.Web.Core
                         else if (arg.StartsWith("openVsCode="))
                         {
                             // Try and parse it
-                            if (bool.TryParse(arg.Substring(arg.IndexOf("=") + 1), out bool openVsCode))
+                            if (bool.TryParse(arg.Substring(arg.IndexOf("=") + 1), out var openVsCode))
                             {
                                 // Set new value
                                 Configuration.OpenVsCode = openVsCode;
@@ -571,6 +571,17 @@ namespace Dna.Web.Core
                     }
 
                     #endregion
+
+                    #region Open VS Code
+                    
+                    // Should we open VS Code?
+                    if (Configuration.OpenVsCode == true)
+                        OpenVsCode(Configuration.MonitorPath);
+
+                    #endregion
+
+                    // Check for updates
+                    AutoUpdateManager.CheckForUpdate();
                 }
 
                 #region Live Data
@@ -583,17 +594,6 @@ namespace Dna.Web.Core
 
                 // Download any out-of-date / unprocessed live sources
                 LiveDataManager.DownloadSourcesAsync(Configuration.LiveDataSources);
-
-                #endregion
-
-                #region Open VS Code
-
-                // Should we open VS Code?
-                if (Configuration.OpenVsCode == true)
-                    OpenVsCode(Configuration.MonitorPath);
-
-                // Check for updates
-                AutoUpdateManager.CheckForUpdate();
 
                 #endregion
             });
@@ -869,7 +869,7 @@ namespace Dna.Web.Core
             var destination = Console.ReadLine();
 
             // Resolve path based on the monitor path being the root
-            destination = DnaConfiguration.ResolveFullPath(Configuration.MonitorPath, destination, true, out bool wasRelative);
+            destination = DnaConfiguration.ResolveFullPath(Configuration.MonitorPath, destination, true, out var wasRelative);
 
             try
             {
@@ -923,7 +923,7 @@ namespace Dna.Web.Core
             var destination = Console.ReadLine();
 
             // Resolve path based on the monitor path being the root
-            destination = DnaConfiguration.ResolveFullPath(Configuration.MonitorPath, destination, true, out bool wasRelative);
+            destination = DnaConfiguration.ResolveFullPath(Configuration.MonitorPath, destination, true, out var wasRelative);
 
             // Add configuration file name
             destination = Path.Combine(destination, DnaSettings.ConfigurationFileName);
@@ -995,7 +995,7 @@ namespace Dna.Web.Core
             destination = Console.ReadLine();
 
             // Resolve path based on the monitor path being the root
-            destination = DnaConfiguration.ResolveFullPath(Configuration.MonitorPath, destination, true, out bool wasRelative);
+            destination = DnaConfiguration.ResolveFullPath(Configuration.MonitorPath, destination, true, out var wasRelative);
 
             // Get unique name from that location
             destination = FileHelpers.GetUnusedPath(Path.Combine(destination, name));
@@ -1402,7 +1402,7 @@ html
 
             // First line should be version string
             // If it isn't...
-            if (lines == null || lines.Length <= 0 || !Version.TryParse(lines[0], out Version vsVersion))
+            if (lines == null || lines.Length <= 0 || !Version.TryParse(lines[0], out var vsVersion))
                 // Presume not installed
                 return false;
 

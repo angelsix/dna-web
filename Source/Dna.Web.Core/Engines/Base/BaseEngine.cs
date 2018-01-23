@@ -1495,12 +1495,13 @@ namespace Dna.Web.Core
                             // Get include path
                             var includePath = match.Groups[2].Value;
 
-                            // Make sure we have not already included it in this run
-                            if (includes.Contains(includePath.ToLower().Trim()))
-                            {
-                                data.Error = $"Circular reference detected {includePath}";
-                                return;
-                            }
+                            // NOTE: No need to check includes for circular references as at this level (looping a single file)
+                            //       you can include the same file multiple times.
+                            //
+                            //       A circular reference would happen if an inner include references a file that references itself
+                            //       and that we check for in FindReferencedFilesAsync
+                            //
+                            //       However we do need to check if it includes itself, which we do in the ProcessIncludeTag
 
                             // Process the include command
                             ProcessIncludeTag(data, output, includePath, match);
@@ -1609,7 +1610,14 @@ namespace Dna.Web.Core
                 output.ProfileName.EqualsIgnoreCase(profileName))
             {
                 // Try and find the include file
-                var includedContents = FindIncludeFile(data.FullPath, includePath, out string resolvedPath);
+                var includedContents = FindIncludeFile(data.FullPath, includePath, out var resolvedPath);
+
+                // If the resolved path is this files path, we have a circular reference
+                if (string.Equals(resolvedPath, data.FullPath, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    data.Error = $"Circular reference detected {resolvedPath}";
+                    return;
+                }
 
                 // If we didn't find it, error out
                 if (includedContents == null)

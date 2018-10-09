@@ -184,3 +184,13 @@ $RECYCLE.BIN/
 
 # Mac desktop service store files
 .DS_Store
+
+Website/ServerRoot/Controllers/
+
+Website/ServerRoot/Views/
+
+Website/ServerRoot/wwwroot/
+
+Website/Source/Assets/Css/
+
+Website/WebRoot/

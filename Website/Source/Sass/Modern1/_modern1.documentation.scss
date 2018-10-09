@@ -1,0 +1,17 @@
+.documentation
+{
+    // All sections on documentation page should fill the page at least
+    // for a nice spaced out effect
+    > section, > header
+    {
+        // Fill the page at least
+        min-height: 100vh;
+    }
+
+    // Main header
+    h1 
+    {
+        // Alternative color
+        @extend h1.alternative;
+    }
+}

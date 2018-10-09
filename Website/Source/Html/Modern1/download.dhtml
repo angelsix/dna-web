@@ -1,0 +1,28 @@
+<!--@ output download @-->
+<!--@ output ..\ServerRoot\Views\Home\Download.cshtml:server @-->
+<!--@ include variables @-->
+<!--@ include header:! @-->
+<!--@ include topmenu @-->
+
+<main class="download">
+
+    <!-- Download -->
+    <section class="container single-vcenter">
+        <div class="grid-wrapper">
+            <div class="grid">
+                <div class="col">
+                    <header class="faded" data-delay-add="slide-in-up-group" data-delay="1">
+                        <h1>It's Go Time!</h1>
+                        <p>Get ready to develop websites<br>like you never have before</p>
+                        <p><a class="button" href="$$Urls.Downloads.Windows32$$">Download Windows (32 bit)</a></p>
+                        <p><a class="button" href="$$Urls.Downloads.Windows64$$">Download Windows (64 bit)</a></p>
+                    </header>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+
+<!--@ include footer:! @-->

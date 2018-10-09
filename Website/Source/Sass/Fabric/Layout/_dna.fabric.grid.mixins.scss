@@ -1,0 +1,419 @@
+
+//
+//   Grid Percent
+//
+@mixin grid-percent($property, $columns)
+{
+    // Set property to a percentage based on 12 columns
+    // For example: @include grid-percent('width', 6) 
+    //              will give width: 50% 
+    //              as 12 / 6 = 2, 100% / 2 = 50%
+    #{$property}: 100% / 12 * $columns;
+}
+
+//
+//   Column Inline
+//
+@mixin column-inline()
+{
+    // Brings a column back to a block-inline
+    // removing the float
+    //
+    // This is required when using text-align
+    // and vertical-align for alignment
+
+    // Remove the float
+    float: none;
+
+    // And set the columns to inline-block's
+    // so that text-align works
+    display: inline-block;            
+}
+
+//
+//   Grid Reverse
+//
+@mixin grid-reverse($prefix: "")
+{
+    // Reverses the column order 
+    // to right-to-left
+    //
+    // Adds the class 'grid-reverse' 
+    // or with a prefix for breakpoints such as
+    // 'desk-grid-reverse'
+
+    /* Create grid-reverse classes */
+    .#{$prefix}#{$fabric-grid-name}-reverse
+    {
+        // Flip direction to right to left
+        direction:rtl;
+
+        // Keep the text alignment as normal
+        text-align:left;
+
+        // For each column
+        > .#{$fabric-grid-col-name}
+        {
+            // Remove the float
+            float: none;
+
+            // And set the columns to inline-block's
+            // so that text-align works
+            display: inline-block;
+
+            // Keep column directions as normal left to right
+            // as parent right to left overrides it if not reset
+            direction:ltr;
+
+            // And keep text alignment as left
+            text-align:left;
+        }
+    }
+}
+
+//
+//
+//
+@mixin grid-horizontal-aligns($prefix: "")
+{
+    // Alignments for horizontal alignment
+    // to be applied to columns
+
+    //
+    //   Grid Horizontal Center
+    //
+    .#{$fabric-grid-name}.#{$prefix}horizontal-center
+    {
+        // Examples
+        // class: grid horizontal-center
+        // class: grid below-lap-horizontal-center
+
+        // Align columns horizontally center
+        text-align: center;
+
+        // Columns
+        > .#{$fabric-grid-col-name}
+        {
+            // Bring column back to inline
+            // so text-align works
+            @include column-inline();
+            
+            // If the column doesn't have center class
+            &:not(.center)
+            {
+                // Align it's text back to left
+                text-align: left;
+            }
+        }
+    }
+}
+
+//
+//   Grid Vertical Alignments
+//
+@mixin grid-vertical-aligns($prefix: "")
+{
+    // Alignments for vertical alignment
+    // to be applied to columns
+
+    //
+    //   Grid Vertical Center
+    //
+    .#{$fabric-grid-name}.#{$prefix}vertical-center
+    {
+        // Examples
+        // class: grid vertical-center
+        // class: grid below-lap-vertical-center
+
+        // Columns
+        > .#{$fabric-grid-col-name}
+        {
+            // Bring column back to inline
+            // so vertical-align works
+            @include column-inline();
+            
+            // Vertically align middle
+            vertical-align: middle;            
+        }
+    }
+
+    //
+    //   Grid Vertical Bottom
+    //
+    .#{$fabric-grid-name}.#{$prefix}vertical-bottom
+    {
+        // Examples
+        // class: grid vertical-bottom
+        // class: grid below-lap-vertical-bottom
+
+        // Columns
+        > .#{$fabric-grid-col-name}
+        {
+            // Bring column back to inline
+            // so vertical-align works
+            @include column-inline();
+            
+            // Vertically align bottom
+            vertical-align: bottom;
+        }
+    }
+
+    //
+    // Grid (inner columns aligned)
+    //
+    .#{$fabric-grid-name}
+    {
+        // For column alignment when inside a standard grid
+
+        //
+        // Columns vertical center
+        //
+        .#{$fabric-grid-col-name}.#{$prefix}vertical-center
+        {
+            // Examples
+            // class: col vertical-center
+            // class: col below-lap-vertical-center
+
+            // Bring column back to inline
+            // so vertical-align works
+            @include column-inline();
+            
+            // Vertically align middle
+            vertical-align: middle;
+        }
+
+        //
+        // Columns vertical bottom
+        //
+        .#{$fabric-grid-col-name}.#{$prefix}vertical-bottom
+        {
+            // Examples
+            // class: col vertical-bottom
+            // class: col below-lap-vertical-bottom
+
+            // Bring column back to inline
+            // so vertical-align works
+            @include column-inline();
+
+            // Vertically align bottom
+            vertical-align: bottom;
+        }
+
+        // Columns vertical top
+        .#{$fabric-grid-col-name}.#{$prefix}vertical-top
+        {
+            // Bring column back to inline
+            // so vertical-align works
+            @include column-inline();
+            
+            // Vertically align top
+            vertical-align:top;
+        }
+    }
+}
+
+//
+//   Grid Column Sizes
+//
+@mixin grid-column-widths($prefix: "")
+{
+    .#{$prefix}one-whole         { @include grid-percent('width', 12); }
+    .#{$prefix}full              { @extend .#{$prefix}one-whole; }
+
+    .#{$prefix}one-half          { @include grid-percent('width', 6); }
+
+    .#{$prefix}one-third         { @include grid-percent('width', 4); }
+    .#{$prefix}two-thirds        { @include grid-percent('width', 8); }
+
+    .#{$prefix}one-quarter       { @include grid-percent('width', 3); }
+    .#{$prefix}two-quarters      { @extend .#{$prefix}one-half; }
+    .#{$prefix}three-quarters    { @include grid-percent('width', 9); }
+
+    .#{$prefix}one-fifth         { @include grid-percent('width', 2.4); }
+    .#{$prefix}two-fifths        { @include grid-percent('width', 4.8); }
+    .#{$prefix}three-fifths      { @include grid-percent('width', 7.2); }
+    .#{$prefix}four-fifths       { @include grid-percent('width', 9.6); }
+
+    .#{$prefix}one-sixth         { @include grid-percent('width', 2); }
+    .#{$prefix}two-sixths        { @extend .#{$prefix}one-third; }
+    .#{$prefix}three-sixths      { @extend .#{$prefix}one-half; }
+    .#{$prefix}four-sixths       { @extend .#{$prefix}two-thirds; }
+    .#{$prefix}five-sixths       { @include grid-percent('width', 10); }
+
+    .#{$prefix}one-eighth        { @include grid-percent('width', 1.5); }
+    .#{$prefix}two-eighths       { @extend .#{$prefix}one-quarter; }
+    .#{$prefix}three-eighths     { @include grid-percent('width', 4.5); }
+    .#{$prefix}four-eighths      { @extend .#{$prefix}one-half; }
+    .#{$prefix}five-eighths      { @include grid-percent('width', 7.5); }
+    .#{$prefix}six-eighths       { @extend .#{$prefix}three-quarters; }
+    .#{$prefix}seven-eighths     { @include grid-percent('width', 10.5); }
+
+    .#{$prefix}one-tenth         { @include grid-percent('width', 1.2); }
+    .#{$prefix}two-tenths        { @extend .#{$prefix}one-fifth; }
+    .#{$prefix}three-tenths      { @include grid-percent('width', 3.6); }
+    .#{$prefix}four-tenths       { @extend .#{$prefix}two-fifths; }
+    .#{$prefix}five-tenths       { @extend .#{$prefix}one-half; }
+    .#{$prefix}six-tenths        { @extend .#{$prefix}three-fifths; }
+    .#{$prefix}seven-tenths      { @include grid-percent('width', 8.4); }
+    .#{$prefix}eight-tenths      { @extend .#{$prefix}four-fifths; }
+    .#{$prefix}nine-tenths       { @include grid-percent('width', 10.8); }
+
+    .#{$prefix}one-twelfth       { @include grid-percent('width', 1); }
+    .#{$prefix}two-twelfths      { @extend .#{$prefix}one-sixth; }
+    .#{$prefix}three-twelfths    { @extend .#{$prefix}one-quarter; }
+    .#{$prefix}four-twelfths     { @extend .#{$prefix}one-third; }
+    .#{$prefix}five-twelfths     { @include grid-percent('width', 5); }
+    .#{$prefix}six-twelfths      { @extend .#{$prefix}one-half; }
+    .#{$prefix}seven-twelfths    { @include grid-percent('width', 7); }
+    .#{$prefix}eight-twelfths    { @extend .#{$prefix}two-thirds; }
+    .#{$prefix}nine-twelfths     { @extend .#{$prefix}three-quarters; }
+    .#{$prefix}ten-twelfths      { @extend .#{$prefix}five-sixths; }
+    .#{$prefix}eleven-twelfths   { @include grid-percent('width', 11); }
+}
+    
+//
+//   Grid Column Pushes
+//
+@mixin grid-push($prefix: "")
+{
+    .push-#{$prefix}one-whole         { @include grid-percent('left', 12); }
+    .push-#{$prefix}full              { @extend .push-#{$prefix}one-whole; }
+
+    .push-#{$prefix}one-half          { @include grid-percent('left', 6); }
+
+    .push-#{$prefix}one-third         { @include grid-percent('left', 4); }
+    .push-#{$prefix}two-thirds        { @include grid-percent('left', 8); }
+
+    .push-#{$prefix}one-quarter       { @include grid-percent('left', 3); }
+    .push-#{$prefix}two-quarters      { @extend .push-#{$prefix}one-half; }
+    .push-#{$prefix}three-quarters    { @include grid-percent('left', 9); }
+
+    .push-#{$prefix}one-fifth         { @include grid-percent('left', 2.4); }
+    .push-#{$prefix}two-fifths        { @include grid-percent('left', 4.8); }
+    .push-#{$prefix}three-fifths      { @include grid-percent('left', 7.2); }
+    .push-#{$prefix}four-fifths       { @include grid-percent('left', 9.6); }
+
+    .push-#{$prefix}one-sixth         { @include grid-percent('left', 2); }
+    .push-#{$prefix}two-sixths        { @extend .push-#{$prefix}one-third; }
+    .push-#{$prefix}three-sixths      { @extend .push-#{$prefix}one-half; }
+    .push-#{$prefix}four-sixths       { @extend .push-#{$prefix}two-thirds; }
+    .push-#{$prefix}five-sixths       { @include grid-percent('left', 10); }
+
+    .push-#{$prefix}one-eighth        { @include grid-percent('left', 1.5); }
+    .push-#{$prefix}two-eighths       { @extend .push-#{$prefix}one-quarter; }
+    .push-#{$prefix}three-eighths     { @include grid-percent('left', 4.5); }
+    .push-#{$prefix}four-eighths      { @extend .push-#{$prefix}one-half; }
+    .push-#{$prefix}five-eighths      { @include grid-percent('left', 7.5); }
+    .push-#{$prefix}six-eighths       { @extend .push-#{$prefix}three-quarters; }
+    .push-#{$prefix}seven-eighths     { @include grid-percent('left', 10.5); }
+
+    .push-#{$prefix}one-tenth         { @include grid-percent('left', 1.2); }
+    .push-#{$prefix}two-tenths        { @extend .push-#{$prefix}one-fifth; }
+    .push-#{$prefix}three-tenths      { @include grid-percent('left', 3.6); }
+    .push-#{$prefix}four-tenths       { @extend .push-#{$prefix}two-fifths; }
+    .push-#{$prefix}five-tenths       { @extend .push-#{$prefix}one-half; }
+    .push-#{$prefix}six-tenths        { @extend .push-#{$prefix}three-fifths; }
+    .push-#{$prefix}seven-tenths      { @include grid-percent('left', 8.4); }
+    .push-#{$prefix}eight-tenths      { @extend .push-#{$prefix}four-fifths; }
+    .push-#{$prefix}nine-tenths       { @include grid-percent('left', 10.8); }
+
+    .push-#{$prefix}one-twelfth       { @include grid-percent('left', 1); }
+    .push-#{$prefix}two-twelfths      { @extend .push-#{$prefix}one-sixth; }
+    .push-#{$prefix}three-twelfths    { @extend .push-#{$prefix}one-quarter; }
+    .push-#{$prefix}four-twelfths     { @extend .push-#{$prefix}one-third; }
+    .push-#{$prefix}five-twelfths     { @include grid-percent('left', 5); }
+    .push-#{$prefix}six-twelfths      { @extend .push-#{$prefix}one-half; }
+    .push-#{$prefix}seven-twelfths    { @include grid-percent('left', 7); }
+    .push-#{$prefix}eight-twelfths    { @extend .push-#{$prefix}two-thirds; }
+    .push-#{$prefix}nine-twelfths     { @extend .push-#{$prefix}three-quarters; }
+    .push-#{$prefix}ten-twelfths      { @extend .push-#{$prefix}five-sixths; }
+    .push-#{$prefix}eleven-twelfths   { @include grid-percent('left', 11); }
+}
+
+//
+//   Grid Pulls
+//
+@mixin grid-pull($prefix: "")
+{
+
+    .pull-#{$prefix}one-whole         { @include grid-percent('right', 12); }
+    .pull-#{$prefix}full              { @extend .pull-#{$prefix}one-whole; }
+
+    .pull-#{$prefix}one-half          { @include grid-percent('right', 6); }
+
+    .pull-#{$prefix}one-third         { @include grid-percent('right', 4); }
+    .pull-#{$prefix}two-thirds        { @include grid-percent('right', 8); }
+
+    .pull-#{$prefix}one-quarter       { @include grid-percent('right', 3); }
+    .pull-#{$prefix}two-quarters      { @extend .pull-#{$prefix}one-half; }
+    .pull-#{$prefix}three-quarters    { @include grid-percent('right', 9); }
+
+    .pull-#{$prefix}one-fifth         { @include grid-percent('right', 2.4); }
+    .pull-#{$prefix}two-fifths        { @include grid-percent('right', 4.8); }
+    .pull-#{$prefix}three-fifths      { @include grid-percent('right', 7.2); }
+    .pull-#{$prefix}four-fifths       { @include grid-percent('right', 9.6); }
+
+    .pull-#{$prefix}one-sixth         { @include grid-percent('right', 2); }
+    .pull-#{$prefix}two-sixths        { @extend .pull-#{$prefix}one-third; }
+    .pull-#{$prefix}three-sixths      { @extend .pull-#{$prefix}one-half; }
+    .pull-#{$prefix}four-sixths       { @extend .pull-#{$prefix}two-thirds; }
+    .pull-#{$prefix}five-sixths       { @include grid-percent('right', 10); }
+
+    .pull-#{$prefix}one-eighth        { @include grid-percent('right', 1.5); }
+    .pull-#{$prefix}two-eighths       { @extend .pull-#{$prefix}one-quarter; }
+    .pull-#{$prefix}three-eighths     { @include grid-percent('right', 4.5); }
+    .pull-#{$prefix}four-eighths      { @extend .pull-#{$prefix}one-half; }
+    .pull-#{$prefix}five-eighths      { @include grid-percent('right', 7.5); }
+    .pull-#{$prefix}six-eighths       { @extend .pull-#{$prefix}three-quarters; }
+    .pull-#{$prefix}seven-eighths     { @include grid-percent('right', 10.5); }
+
+    .pull-#{$prefix}one-tenth         { @include grid-percent('right', 1.2); }
+    .pull-#{$prefix}two-tenths        { @extend .pull-#{$prefix}one-fifth; }
+    .pull-#{$prefix}three-tenths      { @include grid-percent('right', 3.6); }
+    .pull-#{$prefix}four-tenths       { @extend .pull-#{$prefix}two-fifths; }
+    .pull-#{$prefix}five-tenths       { @extend .pull-#{$prefix}one-half; }
+    .pull-#{$prefix}six-tenths        { @extend .pull-#{$prefix}three-fifths; }
+    .pull-#{$prefix}seven-tenths      { @include grid-percent('right', 8.4); }
+    .pull-#{$prefix}eight-tenths      { @extend .pull-#{$prefix}four-fifths; }
+    .pull-#{$prefix}nine-tenths       { @include grid-percent('right', 10.8); }
+
+    .pull-#{$prefix}one-twelfth       { @include grid-percent('right', 1); }
+    .pull-#{$prefix}two-twelfths      { @extend .pull-#{$prefix}one-sixth; }
+    .pull-#{$prefix}three-twelfths    { @extend .pull-#{$prefix}one-quarter; }
+    .pull-#{$prefix}four-twelfths     { @extend .pull-#{$prefix}one-third; }
+    .pull-#{$prefix}five-twelfths     { @include grid-percent('right', 5); }
+    .pull-#{$prefix}six-twelfths      { @extend .pull-#{$prefix}one-half; }
+    .pull-#{$prefix}seven-twelfths    { @include grid-percent('right', 7); }
+    .pull-#{$prefix}eight-twelfths    { @extend .pull-#{$prefix}two-thirds; }
+    .pull-#{$prefix}nine-twelfths     { @extend .pull-#{$prefix}three-quarters; }
+    .pull-#{$prefix}ten-twelfths      { @extend .pull-#{$prefix}five-sixths; }
+    .pull-#{$prefix}eleven-twelfths   { @include grid-percent('right', 11); }
+}
+
+//
+//   Grid Tiles
+//
+@mixin grid-tiles($prefix: "")
+{
+    // Allows specifying a size for all columns inside a grid
+    //
+    //   Example:
+    //   <div class="grid tile-one-quarter">
+    //     <div class="col"></div>
+    //     <div class="col"></div>
+    //     <div class="col"></div>
+    //     <div class="col"></div>
+    //   </div>
+    //
+    //
+
+    .#{$fabric-grid-name}.#{$prefix}tile-one-whole { > .#{$fabric-grid-col-name} { @extend .#{$prefix}one-whole; } }
+    .#{$fabric-grid-name}.#{$prefix}tile-one-half { > .#{$fabric-grid-col-name} { @extend .#{$prefix}one-half; } }
+    .#{$fabric-grid-name}.#{$prefix}tile-one-third { > .#{$fabric-grid-col-name} { @extend .#{$prefix}one-third; } }
+    .#{$fabric-grid-name}.#{$prefix}tile-one-quarter { > .#{$fabric-grid-col-name} { @extend .#{$prefix}one-quarter; } }
+    .#{$fabric-grid-name}.#{$prefix}tile-one-fifth { > .#{$fabric-grid-col-name} { @extend .#{$prefix}one-fifth; } }
+    .#{$fabric-grid-name}.#{$prefix}tile-one-sixth { > .#{$fabric-grid-col-name} { @extend .#{$prefix}one-sixth; } }
+    .#{$fabric-grid-name}.#{$prefix}tile-one-eighth { > .#{$fabric-grid-col-name} { @extend .#{$prefix}one-eighth; } }
+    .#{$fabric-grid-name}.#{$prefix}tile-one-tenth { > .#{$fabric-grid-col-name} { @extend .#{$prefix}one-tenth; } }
+    .#{$fabric-grid-name}.#{$prefix}tile-one-twelfth { > .#{$fabric-grid-col-name} { @extend .#{$prefix}one-twelfth; } }
+}

@@ -1,0 +1,6 @@
+<!--@ output ..\ServerRoot\Views\Shared\_Layout.cshtml:server @-->
+<!--@ include ..\variables @-->
+<!--@ include ..\header @-->
+@RenderBody()
+<!--@ include ..\footer @-->
+

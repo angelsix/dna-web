@@ -1,0 +1,176 @@
+// 
+//   Vendor
+//
+@mixin vendor($property, $value...)
+{
+    // Prefixs all vendor names to a property
+    -webkit-#{$property}: $value;
+    -moz-#{$property}: $value;
+    -ms-#{$property}: $value;
+    #{$property}: $value;
+}
+
+// 
+//   Hocus
+//
+@mixin hocus()
+{
+    &:hover, &:focus
+    {
+        @content;
+    }
+}
+
+//
+//   Box-sizing
+//
+@mixin box-sizing($box-model) 
+{
+    // > border-box  = width/height includes the border and padding
+    // > content-box = width/height excludes the border and padding 
+    @include vendor(box-sizing, $box-model);
+}
+
+//
+//   Hidden
+//
+@mixin hidden($prefix: "")
+{
+    // Hides elements at specific breakpoints
+    //
+    //   Examples:
+    //     .hidden (all the time)
+    //     .below-lap-hidden (hidden when below-lap breakpoint)
+    //
+    .#{$prefix}hidden
+    {
+        // Hide
+        display: none !important;   
+    }
+}
+
+//
+//   Faded
+//
+@mixin faded($prefix: "")
+{
+    // Fades elements at specific breakpoints
+    //
+    //   Examples:
+    //     .faded (all the time)
+    //     .below-lap-faded (faded when below-lap breakpoint)
+    //
+    .#{$prefix}faded
+    {
+        // Fade
+        opacity: 0;   
+    }
+}
+
+//
+//   Show
+//
+@mixin show-block($prefix: "")
+{
+    // Shows elements at specific breakpoints
+    //
+    //   Examples:
+    //     .show (all the time)
+    //     .below-lap-show (shown when below-lap breakpoint)
+    //
+    .#{$prefix}show-block
+    {
+        // Hide
+        display: block !important;   
+    }
+}
+
+//
+//   Show
+//
+@mixin show-inline($prefix: "")
+{
+    // Shows elements at specific breakpoints, as display inline-block
+    //
+    //   Examples:
+    //     .show (all the time)
+    //     .below-lap-show-inline (shown when below-lap breakpoint)
+    //
+    .#{$prefix}show-inline
+    {
+        // Hide
+        display: inline-block !important;   
+    }
+}
+
+// When scrolling on Y the bottom padding gets lost
+// so fix it with a pseudo element at the bottom 
+@mixin scrolly($padding, $clear-padding: false)
+{
+    // Overflow Y
+    overflow-y: auto;
+
+    // Remove any bottom padding
+    // as it will get added via the ::after
+    // for items that are not full height of screen
+    @if $clear-padding == true
+    {
+        padding-bottom: 0;
+    }
+
+    &::after
+    {
+        content: "";
+        display: block;
+        height: $padding;
+        width: 100%;
+    }
+}
+
+//
+//   Media
+//
+@mixin media($media-query)
+{
+    // Usage:
+    //
+    //   @include media('desk')
+    //   {
+    //      content-here
+    //   }
+    //   
+
+    // Flag if we find the breakpoint
+    $found: false;
+
+    // Search each breakpoint...
+    @each $breakpoint in $breakpoints
+    {
+        // Get the name from first element
+        $name: nth($breakpoint, 1);
+
+        // Get the media query from second element
+        $query: nth($breakpoint, 2);
+
+        // If we have a query with this name
+        @if $media-query == $name
+        {
+            // Flag it as found
+            $found: true;
+
+            // Add media query from the breakpoint value
+            @media only screen and #{$query}
+            {
+                // Add the content passed in
+                @content;
+            }
+        }
+    }
+
+    // If we didn't find the breakpoint...
+    @if $found == false
+    {
+        // Warn
+        @warn "Media breakpoint not found"
+    }
+}

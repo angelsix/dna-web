@@ -1,0 +1,42 @@
+//
+//   Standard Menu 2
+//
+//   The standard menu 2 is a menu with the logo and
+//   menu items all to the left, and another area
+//   to the right for any right-aligned items
+//
+//    ----------------------------------------------
+//   |  *LOGO*  Home About --------------- Contact  |
+//    ----------------------------------------------
+//
+
+//
+//   Styling
+//
+.top-menu-standard2
+{
+    // Extend top menu standard
+    @extend .top-menu-standard;
+
+    // Main content area (image and menu items)
+    > div
+    {        
+        // Logo
+        > .menu-logo
+        {
+            // Don't take up all the space by default
+            flex-grow: 0;
+
+            // Bit of space between logo and menu items
+            margin-right: $spacing-normal;
+            
+            // When menu is below laptop
+            @include media($breakpoint-below-laptop)
+            {
+                // Take up remaining width so 
+                // hamburger menu right-aligns
+                flex-grow: 1;
+            }
+        }
+    }        
+}

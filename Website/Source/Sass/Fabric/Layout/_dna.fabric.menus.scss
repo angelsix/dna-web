@@ -1,0 +1,47 @@
+//
+//   Horizontal Menu
+//
+ul.horizontal-menu
+{
+    // Extend the horizontal ul to inline everything horizontally
+    @extend .horizontal;
+
+    // NOTE: To vertically align the items by setting a line height
+
+    // Each menu item...
+    li
+    {        
+        // Remove any explicit line-height inherit from parent
+        // as line-height is used to certically center
+        line-height: normal;
+        
+        > a
+        {
+            // Transition padding nicely
+            transition: padding $transition-normal, color $transition-normal;
+
+            // Nice big font
+            font-size: $font-large;
+
+            // Thin font (with it being large)
+            font-weight: $font-weight-light;
+
+            // Small padding above and below (so hover catches area around text a little)
+            // Normal padding left and right to add nice spacing
+            padding: $spacing-small $spacing-normal;
+
+            // Make the link inside it a list-item
+            // so the height is 100%
+            display: list-item;
+
+            // Main bright color
+            color: $color6;
+
+            @include hocus()
+            {
+                // Highlight in bright color on hover
+                color: $color2;
+            }
+        }
+    }
+}

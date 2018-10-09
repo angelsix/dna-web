@@ -1,0 +1,176 @@
+//
+//   Shake animation on hover
+//
+.shake:hover 
+{
+  position: relative;
+
+  animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes shake 
+{
+  10%, 90%      { left: -1px; }
+  20%, 80%      { left: 2px; }
+  30%, 50%, 70% { left: -4px; }
+  40%, 60%      { left: 4px; }
+}
+
+//
+//   Simple fade in
+//
+.slide-fade-in
+{
+  opacity: 0;
+
+  animation-name: slide-fade-in;
+  animation-duration:  $transition-time-normal;
+
+  &.slow { animation-duration: $transition-time-slow; }
+  &.slower { animation-duration: $transition-time-slower; }
+
+  // Keep animation properties once done
+  animation-fill-mode: forwards;
+}
+
+@keyframes slide-fade-in
+{
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+
+//
+//   Fade in and slide up from below
+//
+.slide-fade-in-group
+{
+  opacity: 1;
+
+  > * { @extend .slide-fade-in; }
+
+  > *:nth-child(1) { animation-delay: 0s; }
+  > *:nth-child(2) { animation-delay: 0.4s; }
+  > *:nth-child(3) { animation-delay: 0.6s; }
+  > *:nth-child(4) { animation-delay: 0.8s; }
+  > *:nth-child(5) { animation-delay: 1s; }
+  > *:nth-child(6) { animation-delay: 1.2s; }
+  > *:nth-child(7) { animation-delay: 1.4s; }
+
+  &.slower
+  {
+    > *:nth-child(1) { animation-delay: 0s; }
+    > *:nth-child(2) { animation-delay: 0.4s; }
+    > *:nth-child(3) { animation-delay: 1s; }
+    > *:nth-child(4) { animation-delay: 1.6s; }
+    > *:nth-child(5) { animation-delay: 2.2s; }
+    > *:nth-child(6) { animation-delay: 2.8s; }
+    > *:nth-child(7) { animation-delay: 3.4s; }      
+  }
+}
+
+//
+//   Slide in and fade in from above
+//
+.slide-in-down
+{
+  position: relative;
+
+  animation: slide-in-down $transition-normal; 
+}
+
+@keyframes slide-in-down
+{
+  0% { top: -100%; opacity: 0; }
+  100% { top: 0; opacity: 1; }
+}
+
+//
+//   Fade in and slide up from below
+//
+.slide-in-up-group
+{
+  opacity: 1;
+
+  > * { @extend .slide-in-up; }
+
+  > *:nth-child(1) { animation-delay: 0s; }
+  > *:nth-child(2) { animation-delay: 0.4s; }
+  > *:nth-child(3) { animation-delay: 0.6s; }
+  > *:nth-child(4) { animation-delay: 0.8s; }
+  > *:nth-child(5) { animation-delay: 1s; }
+  > *:nth-child(6) { animation-delay: 1.2s; }
+  > *:nth-child(7) { animation-delay: 1.4s; }
+}
+
+.slide-in-up
+{
+    // Position 100px lower
+    position: relative;
+
+    opacity: 0;
+
+    // Fade in and slide up
+    animation: slide-in-up 1s; 
+
+    // Keep animation properties once done
+    animation-fill-mode: forwards;
+}
+
+@keyframes slide-in-up
+{
+  0% { bottom: -100px; opacity: 0; }
+  100% { bottom: 0; opacity: 1; }
+}
+
+.will-slide-in-up
+{
+  @extend .faded;
+  transition: opacity $transition-normal;
+}
+
+//
+//   Slides in from left side and fades in, then shakes at the end
+//
+.slide-in-left-shake 
+{
+  // Position relative so we can move to left
+  position: relative;
+
+  // Start hidden
+  opacity: 0;
+
+  animation: slide-in-left-shake $transition-slow;
+
+  // Keep animation properties once done
+  animation-fill-mode: forwards;    
+}
+
+@keyframes slide-in-left-shake
+{
+  0% { left: -100%; opacity: 0; }  
+  40% { opacity: 0.1; }
+  70% { left: 2%; }  
+  75% { left: -2%; }  
+  80% { left: 2%; }  
+  85% { left: -1%; }  
+  95% { left: 1%; }  
+  100% { left: 0%; opacity: 1; }  
+}
+
+//
+//   Infinite animation simulating a bubble rising and fading out
+//
+.bubble-up 
+{
+  animation: bubble-up 3s ease-in infinite; 
+}
+
+@keyframes bubble-up
+{
+  // NOTE: margin-top as a percentage seems to be based on the containers width
+  //       for some reason
+  0% { opacity: 0; }    
+  20% { opacity: 1; margin-top: -1%; }    
+  100% { opacity: 0; margin-top: -50%; }
+}

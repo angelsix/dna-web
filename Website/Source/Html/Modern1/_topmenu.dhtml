@@ -1,0 +1,39 @@
+<!-- Top Navigation Menu -->
+<nav class="top-menu-standard slide-in-down" data-scrolldown-class="reduced">
+
+    <!-- Top Menu Contents -->
+    <div>
+
+        <!-- Logo -->
+        <div class="menu-logo">
+            <a href="$$Urls.Home$$">
+                <img src="$$Images.LogoText$$" />
+            </a>
+        </div>
+
+        <!-- Menu Icon -->
+        <div class="menu-icon">
+            <a href="#topmenu" data-toggle-class="expanded">
+                <i class="ion-navicon-round"></i>
+            </a>
+        </div>
+
+        <!-- Menu items -->
+        <ul data-topmenu-class="expanded">
+            <li>
+                <a href="$$Urls.Documentation$$">docs</a>
+            </li>
+            <li>
+                <a href="$$Urls.Changelog$$">changelog</a>
+            </li>
+            <li>
+                <a href="$$Urls.Download$$">download</a>
+            </li>
+            <li>
+                <a href="$$Urls.External.SourceCode$$" target="_blank">source</a>
+            </li>
+        </ul>
+
+    </div>
+
+</nav>

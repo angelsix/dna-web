@@ -1,0 +1,68 @@
+// NOTE: When including this file first include the 
+//       dna.fabric.settings file, and in between those
+//       two files specify any custom settings you want
+//       to override with your own, for example:
+//
+//       @import 'Settings/dna.fabric.settings'
+//       @import 'your.settings'
+//
+//       @import 'dna.fabric'
+//       @import 'your.styles'
+//
+
+// Base
+@import "Base/dna.fabric.normalize";
+@import "Base/dna.fabric.breakpoints";
+@import "Base/dna.fabric.mixins";
+
+// Theme
+@import "Theme/dna.fabric.palette";
+@import "Theme/dna.fabric.theme";
+@import "Theme/dna.fabric.fonts.quicksand";
+
+// Layout / Grid
+@import "Layout/dna.fabric.layout";
+@import "Layout/dna.fabric.align";
+@import "Layout/dna.fabric.responsive";
+@import "Layout/dna.fabric.grid";
+@import "Layout/dna.fabric.lists";
+@import "Layout/dna.fabric.menus";
+
+// Dialogs
+@import "Dialogs/dna.fabric.dialogs";
+
+// Particles
+@import "Particles/dna.fabric.particles";
+
+// Icon Fonts
+@import "Fonts/ionicons";
+
+// Animations
+@import "Animations/dna.fabric.animations";
+
+// Styles / Controls / Elements
+@import "TopMenus/dna.fabric.topmenus";
+
+
+body
+{
+    // Set line heights
+    line-height: $base-line-height;
+
+    // Set default font weights
+    font-weight: $font-weight-normal;
+}
+
+h1,h2,h3,h4,h5,h6
+{
+    // Set heading font weights
+    font-weight: $font-weight-heading;
+}
+
+// Set heading sizes
+h1 { font-size: $header-size-1; }
+h2 { font-size: $header-size-2; }
+h3 { font-size: $header-size-3; }
+h4 { font-size: $header-size-4; }
+h5 { font-size: $header-size-5; }
+h6 { font-size: $header-size-6; }

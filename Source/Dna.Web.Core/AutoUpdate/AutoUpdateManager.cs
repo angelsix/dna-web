@@ -23,8 +23,8 @@ namespace Dna.Web.Core
                 var currentVersion = DnaSettings.Version;
                 var currentPlatform = DnaSettings.Platform;
 
-                // Get version from internet
-                var onlineReleasesString = WebHelpers.DownloadString("https://raw.githubusercontent.com/angelsix/docs.dnaweb/master/Releases/releases.json");
+                // Get version from Internet
+                var onlineReleasesString = WebHelpers.DownloadString("http://dnaweb.io/api/releases");
                 var onlineReleases = JsonConvert.DeserializeObject<AutoUpdateReleases>(onlineReleasesString);
 
                 // If we have nothing...

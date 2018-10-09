@@ -1,0 +1,31 @@
+<!--$
+
+<Data>
+
+    <Variable Name="WebsiteTitle">DnaWeb - A modern web platform</Variable>    
+
+    <Variable Name="Urls.Home">/</Variable>    
+    <Variable Name="Urls.Documentation">/documentation</Variable>    
+    <Variable Name="Urls.Changelog">/changelog</Variable>    
+    <Variable Name="Urls.Download">/download</Variable>    
+    <Variable Name="Urls.ApiReleases">/api/releases</Variable>    
+
+    <Variable Name="Urls.External.SourceCode">https://www.github.com/angelsix/dna-web</Variable>    
+    <Variable Name="Urls.External.VSCode">https://code.visualstudio.com/</Variable>
+    <Variable Name="Urls.External.LiveDataSources">https://github.com/angelsix/dna-web/tree/master/Source/Dna.Web.Core/LiveData/Source</Variable>
+    <Variable Name="Urls.External.SourceExamples">https://github.com/angelsix/dna-web/tree/develop/Examples</Variable>
+    <Variable Name="Urls.External.Wix">http://wixtoolset.org</Variable>
+
+    <Variable Name="Urls.Downloads.Windows32">/download/win32</Variable>
+    <Variable Name="Urls.Downloads.Windows64">/download/win64</Variable>
+    
+    <Variable Name="Images.FavIcon">/Assets/Images/favicon.ico</Variable>
+    <Variable Name="Images.Logo">/Assets/Images/logo.png</Variable>
+    <Variable Name="Images.LogoText">/Assets/Images/logo-text.png</Variable>
+    <Variable Name="Images.LiveServer">/Assets/Images/liveserver.png</Variable>
+    <Variable Name="Images.DnaWeb">/Assets/Images/dnaweb.png</Variable>
+    <Variable Name="Images.AddressBar">/Assets/Images/addressbar.png</Variable>
+
+</Data>
+
+$-->

@@ -1,0 +1,53 @@
+html
+{
+    background: $color1;
+    color: $color6;
+}
+
+//
+//   Anchors
+//
+a
+{
+    // No underline
+    text-decoration: none;
+
+    // Secondary dull color
+    color: $color5;
+
+    // On hover...
+    &:hover
+    {
+        // Secondary bright color on hover
+        color: $color3;
+    }
+
+    // Animate color change smoothly
+    transition: color $transition-normal;
+
+    &.alternative
+    {
+        // General bright color
+        color: $color6;
+
+        // On hover...
+        &:hover
+        {
+            // Main bright color on hover
+            color: $color2;
+        }
+    }
+}
+
+// Default style for marks
+mark
+{
+    // No background color
+    background-color: transparent;
+
+    // Foreground color of the themes bright color
+    color: $color2;
+}
+
+// Secondary theme color for alternative mark
+mark.alternative { color: $color3; }

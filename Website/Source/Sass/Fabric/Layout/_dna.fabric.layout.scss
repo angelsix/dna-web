@@ -1,0 +1,94 @@
+//
+//   Box-sizing everything
+//
+*
+{
+    // Make every sizing include padding and border
+    box-sizing: border-box;
+}
+
+//
+//   Container
+//
+.container
+{
+    // A general container just adding padding around contents
+    //  * If used at root level it's full width like a banner
+    //  * If used inside something just adds nice padding 
+    //
+    //  Example:
+    //  <body>
+    //    <div class="container">
+    //      <div class="wrapper">
+    //        <div class="grid"></div>
+    //      </div>
+    //    </div>
+    //  <body> 
+    //
+
+    // Large padding on large screens
+    padding: $spacing-larger $spacing-normal;
+
+    // Smaller when screen gets smaller
+    @include media($breakpoint-mobile)
+    {
+        padding:  $spacing-large $spacing-small;
+    }
+}
+
+//
+//   Images by default 100% width
+//
+img
+{
+    width: 100%;
+}
+
+//
+//   Align Text Horizontally Center
+//
+.text-horizontal-center
+{
+    text-align: center;
+    
+    // Fix centering for display: table elements
+    margin-left: auto;
+    margin-right: auto;
+}
+
+//
+//   Align Text Horizontally Left
+//
+.text-left { text-align: left; }
+
+//
+//   Align Text Horizontally Right
+//
+.text-right { text-align: right; }
+
+.clearfix
+{
+    &:after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+}
+
+//
+//   Hide
+//
+.hidden
+{
+    display: none;
+}
+
+//
+//   Faded
+//
+.faded
+{
+    opacity: 0;
+}
+
+// TODO: Add vertical alignments for specific types

@@ -1,0 +1,22 @@
+//
+//   TOP MENU STANDARD
+//
+
+// Top menu height
+$top-menu-standard-padding: $spacing-small !default;
+$top-menu-standard-reduced-padding: $spacing-small !default;
+
+// Top menu items padding
+$top-menu-standard-item-padding: $spacing-normal !default;
+$top-menu-standard-reduced-item-padding: $spacing-smaller !default;
+
+// Logo height
+$top-menu-standard-logo-height: $spacing-larger !default;
+$top-menu-standard-reduced-logo-height: $spacing-larger !default;
+
+// Font size
+$top-menu-standard-font-size: $font-large !default;
+$top-menu-standard-reduced-font-size: $font-normal !default;
+
+// Top menu push-down calculation
+$top-menu-pushdown: $top-menu-standard-logo-height + ($top-menu-standard-padding * 2) + ($top-menu-standard-item-padding * 2) !default;

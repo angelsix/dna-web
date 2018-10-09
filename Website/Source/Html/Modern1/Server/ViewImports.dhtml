@@ -1,0 +1,2 @@
+<!--@ output ..\ServerRoot\Views\_ViewImports.cshtml:server @-->
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers

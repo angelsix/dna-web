@@ -1,0 +1,31 @@
+ul.vertical
+{
+    // Clear all styling
+    list-style: outside none none;
+    
+    // Remove padding
+    padding: 0;
+
+    // Remove margin
+    margin: 0;    
+}
+
+ul.horizontal
+{
+    // Clear all styling
+    list-style: outside none none;
+
+    // Remove padding
+    padding: 0;
+
+    // Remove margin
+    margin: 0;
+
+    // Each item in the list...
+    li
+    {
+        // Inline-block display
+        display: inline-block;
+    }
+}
+

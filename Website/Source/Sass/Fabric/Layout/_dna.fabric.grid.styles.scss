@@ -1,0 +1,70 @@
+//
+//   Grid 
+//
+.#{$fabric-grid-name}
+{
+    // Fix any grids used inside lists
+    list-style: none;
+
+    // Clear any margins 
+    margin: 0;
+
+    // Clear any padding
+    padding: 0;
+
+    // Shift left of grid over by column padding
+    // Remove first columns gutter
+    margin-left:-$fabric-grid-col-padding;
+
+    // Fix whitespace issue between columns
+    // by changing size to 0
+    font-size: 0px;        
+        
+    @extend .clearfix;
+}
+
+//
+//   Column
+//
+.#{$fabric-grid-col-name}
+{
+    // Reset font size
+    font-size: $base-font-size;
+
+    // Default full width if not specified
+    width: 100%;
+    
+    // Required for fluid widths to work with padding (gutter)
+    @include box-sizing(border-box);
+        
+    float: left;
+
+    padding-left: $fabric-grid-col-padding;
+
+    &:last-of-type 
+    {
+        padding-right: 0;
+    }
+}
+
+//
+//   Grid Wrapper
+//
+.grid-wrapper
+{
+    // Example:
+    // <div class="wrapper">
+    //   <div>General content</div>
+    //   <div class="grid"></div>
+    // </div>
+
+    // Adds left-right padding to main wrapper so
+    // contents doesn't touch very edge of screen
+    padding: 0 $fabric-grid-col-padding;   
+
+    // Max width should match the grid
+    // so any content inside of a wrapper
+    // will be the same size as a grid
+    max-width: $fabric-grid-max-width; 
+    margin: 0 auto;   
+}

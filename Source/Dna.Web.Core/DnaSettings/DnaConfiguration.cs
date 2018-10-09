@@ -234,7 +234,7 @@ namespace Dna.Web.Core
                 {
                     new DnaConfigurationLiveDataSource
                     {
-                       ConfigurationFileSource = "https://raw.githubusercontent.com/angelsix/docs.dnaweb/master/LiveData/DnaWeb/dna.live.config"
+                       ConfigurationFileSource = "https://raw.githubusercontent.com/angelsix/dna-web-data/master/LiveData/DnaWeb/dna.live.config"
                     },
                     new DnaConfigurationLiveDataSource
                     {

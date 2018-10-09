@@ -1,0 +1,57 @@
+//
+//   Base Settings
+//
+
+// High-level settings for the entire site
+// To create relational sizing and
+//  aesthetically pleasing design
+$base-spacing-unit: 24px !default;
+$base-font-size: 16px !default;
+$base-line-height: 1.6em !default;
+
+// Spacing sizes
+$spacing-smaller: $base-spacing-unit / 2.5 !default;
+$spacing-small: $base-spacing-unit / 1.5 !default;
+$spacing-normal: $base-spacing-unit !default;
+$spacing-large: $base-spacing-unit * 1.5 !default;
+$spacing-larger: $base-spacing-unit * 2 !default;
+$spacing-largest: $base-spacing-unit * 3 !default;
+
+// Font sizes
+$font-xsmall: $base-font-size / 1.6 !default;
+$font-small: $base-font-size / 1.3 !default;
+$font-normal: $base-font-size !default;
+$font-large: $base-font-size * 1.3 !default;
+$font-larger: $base-font-size * 2 !default;
+$font-largest: $base-font-size * 3 !default;
+
+// Font weights
+$font-weight-light: lighter !default;
+$font-weight-normal: normal !default;
+$font-weight-bold: bold !default;
+$font-weight-black: bolder !default;
+$font-weight-heading: $font-weight-normal !default;
+
+// Header sizes
+$header-size-1: $base-font-size * 2 !default;
+$header-size-2: $base-font-size * 1.5 !default;
+$header-size-3: $base-font-size * 1.35 !default;
+$header-size-4: $base-font-size * 1.2 !default;
+$header-size-5: $base-font-size !default;
+$header-size-6: $base-font-size * 0.9 !default;
+
+// Animations
+$transition-time-normal: 0.7s !default;
+$transition-time-slow: 1s !default;
+$transition-time-slower: 2s !default;
+$transition-function: ease !default;
+
+// To be used like: transition: padding $transition-normal !default;
+$transition-normal: $transition-time-normal $transition-function !default;
+$transition-slow: $transition-time-slow $transition-function !default;
+$transition-slower: $transition-time-slower $transition-function !default;
+
+// Sit dialogs above general content
+$z-dialogs: 10 !default;
+
+@import 'dna.fabric.settings.topmenus';

@@ -1,0 +1,255 @@
+//
+//   Styling
+//
+.top-menu-standard
+{    
+    // Extend top menu
+    @extend .top-menu;
+
+    // Smooth animations
+    transition: padding $transition-normal, color $transition-normal, background-color $transition-normal;
+
+    // Start off transparent background
+    background: transparent;
+    
+    // Main bright foreground color
+    color: $color6;
+
+    // Fixed position
+    position: fixed;
+    top: 0;
+    
+    // Width 100% due to fixed removing it
+    width: 100%;
+
+    // Add top/bottom padding
+    padding: $top-menu-standard-padding;
+        
+    // Main content area (image and menu items
+    > div
+    {        
+        // Use flexbox to vertically center items
+        display: flex;
+
+        // Align center vertical
+        flex-direction: row;
+        align-items: center;
+    
+        // Allow overflowing to new rows
+        // so our mobile menu can go to new lines
+        flex-wrap: wrap;
+
+        // Keep menu within grid width
+        max-width: $fabric-grid-max-width; 
+        margin: 0 auto;
+
+        // Logo
+        > .menu-logo
+        {
+            // Smooth transitions
+            transition: padding $transition-normal;
+
+            // Take up remaining space
+            flex-grow: 1;
+
+            // Vertical align inner content
+            display: flex;
+            align-items: center;
+
+            // Add item padding
+            padding: $top-menu-standard-item-padding;
+                            
+            img
+            {
+                // Smooth transitions
+                transition: height $transition-normal;
+                        
+                // Set image height
+                height: $top-menu-standard-logo-height;
+                width: auto;
+
+                // Make image inline (as it can be inside an anchor) and vertical aligned
+                // to remove the baseline offset and correctly align vertically
+                display: inline-block;
+                vertical-align: middle;
+            }
+        }
+
+        // Menu Icon when < laptop
+        > .menu-icon
+        {   
+            // Hide by default
+            @extend .hidden;
+
+            // Alternative link color
+            > a 
+            {           
+                // Smooth transitions
+                transition: padding $transition-normal, transform $transition-normal, color $transition-normal;
+
+                // Add item padding just left/right for icon
+                padding: 0 $top-menu-standard-item-padding;
+            
+                // Bright general color
+                color: $color6;
+
+                // Inline block so its scalable
+                display: inline-block;
+
+                // When expanded go main bright color
+                // On hover go main bright color
+                &.expanded, &:hover 
+                {
+                    // Main bright color 
+                    color: $color2; 
+
+                    // Grow a bit
+                    // NOTE: Won't work on opera but its only a nice to have
+                    //       effect so doesn't matter
+                    transform-origin: 50% 50%;
+                    transform: scale(1.3, 1.3);
+                }
+            }
+
+            // Show when below laptop
+            @extend .#{$breakpoint-below-laptop}-show-block;
+
+            // Nice big font
+            font-size: $font-larger;      
+        }
+        
+        // Menu items
+        > ul
+        {
+           // Transition slide-in smoothly
+           transition: left $transition-normal, opacity $transition-normal;      
+           
+            // Make horizontal menu
+            @extend .horizontal-menu;
+
+            // When menu is below laptop
+            @include media($breakpoint-below-laptop)
+            {
+                // Go full width
+                position: fixed;
+                top: 0;
+                bottom: 0;
+                left: 0;
+
+                // Push menu items below actual menu
+                padding-top: $top-menu-pushdown;
+                
+                // Show behind logo and hamburger
+                z-index: -1;
+                
+                // Color background
+                background: $color1;
+
+                // Push
+                min-width: 100%;
+
+                // Hide off to the left by default
+                left: -100%;
+            }
+
+            // For each menu item
+            > li 
+            {
+                // Display as list item
+                display: list-item;
+
+                // Float left
+                float: left;
+
+                // Set font size
+                > a
+                {
+                    // Smooth transition
+                    transition: padding $transition-normal, font-size $transition-normal, color $transition-normal;
+
+                    // Item padding
+                    padding: $top-menu-standard-item-padding;
+                
+                    // Set font size
+                    font-size: $top-menu-standard-font-size; 
+                }
+
+                // Hide below laptop
+                @include media ($breakpoint-below-laptop)
+                {
+                    float: none;
+                    text-align: center;
+                }
+            }
+
+            // When expanded show all menu items
+            &.expanded
+            {
+                @include media ($breakpoint-below-laptop)
+                {
+                    // Slide in when expanded
+                    left: 0;
+                }
+            }
+        }
+    }
+
+    // Reduce size of menu
+    &.reduced
+    {
+        // Main background color
+        background: $color1;
+
+        // Reduce padding
+        padding: $top-menu-standard-reduced-padding;
+        
+        > div
+        {
+            // The logo
+            > .menu-logo 
+            {
+                // Add item padding just left/right for icon
+                padding: 0 $top-menu-standard-reduced-item-padding;
+                                
+                // Image
+                img
+                {
+                    // Make image smaller
+                    height: $top-menu-standard-reduced-logo-height;                            
+                }
+            }
+
+            > .menu-icon > a
+            {
+                // Reduced item padding
+                padding: $top-menu-standard-reduced-item-padding;
+            }
+
+            > ul > li > a
+            {
+                // Reduced font size
+                font-size: $top-menu-standard-reduced-font-size;
+
+                // Reduced item padding
+                padding: $top-menu-standard-reduced-item-padding;
+            }
+        }
+    }
+
+    @include media($breakpoint-below-laptop)
+    {
+        // If below laptop, reduced menu items stay full padding 
+        // so they dont change size when scrolling
+        &.reduced
+        {
+            > div > ul > li > a
+            {
+                // Normal font size
+                font-size: $top-menu-standard-font-size;
+
+                // Normal item padding
+                padding: $top-menu-standard-item-padding;
+            }
+        }
+    }
+}

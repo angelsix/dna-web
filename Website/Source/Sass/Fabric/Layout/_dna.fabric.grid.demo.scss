@@ -1,0 +1,42 @@
+.fabric-grid-demo
+{
+    // Demo column
+    .demo-col
+    {
+        // Make sure element is block
+        display: block;
+
+        // Pad it top/bottom with same padding as the gaps
+        // between the columns so looks asthetically pleasing
+        padding: $fabric-grid-col-padding 0px;
+
+        // Align text in center
+        text-align: center;
+
+        // Color background and by theme
+        background: $color1;
+        color: $color6;
+
+        // Add dotted border around each item
+        border: 1px dashed $color2;
+
+        // Add margin below each column
+        // so it spaces everything in a nice grid
+        margin-bottom: $spacing-normal;    
+    }
+
+    .demo-col-big
+    {
+        @extend .demo-col;
+        
+        padding: 70px 0px;
+        border-color: #98a738;
+    }
+    .demo-col-medium
+    {
+        @extend .demo-col;
+        
+        padding: 40px 0px;
+        border-color: #714351;
+    }
+}

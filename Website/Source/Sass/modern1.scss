@@ -1,0 +1,269 @@
+@import "Fabric/Settings/dna.fabric.settings";
+@import "Fabric/dna.fabric";
+@import "Modern1/modern1.home";
+@import "Modern1/modern1.documentation";
+@import "Modern1/modern1.download";
+
+// Containers
+.container
+{
+    // On my site, I am going for the super-spacious appearance
+    // so lets make the containers really spaced out
+
+    // Large padding on large screens
+    padding: #{$spacing-largest * 2} $spacing-larger;
+    
+    // Smaller when screen gets smaller
+    @include media($breakpoint-mobile)
+    {
+        padding:  $spacing-larger $spacing-normal;
+    }        
+}
+
+.top-menu-standard .menu-logo img
+{
+    // Make logo shake on hover
+    @extend .shake;
+}
+
+// Button style
+a.button
+{
+    // Display inline block
+    display: inline-block;
+
+    // Larger font
+    font-size: $font-larger;
+
+    // On smaller screens...
+    @include media('below-lap')
+    {
+        // Larger font
+        font-size: $font-large;
+    }
+
+    // Border
+    border: 1px solid $color3;
+
+    // Border radius
+    border-radius: $spacing-normal;
+
+    // Padding inside button
+    padding: $spacing-normal;
+
+    // Text color bright neutral
+    color: $color6;
+
+    // Hover effect
+    @include hocus()
+    {
+        // Bright secondary color
+        color: $color3;
+    }
+}
+
+// Sections in general
+section
+{
+    // Dark background color
+    background: $color1;
+
+    // The text inside header
+    header
+    {
+        // Works same space apart as the height of the text
+        line-height: 1;
+
+        // Center the text
+        text-align: center;
+
+        // Each line of text as a header
+        > h1
+        {
+            // Unusually large font
+            font-size: $font-largest * 2;
+
+            // On smaller screens...
+            @include media('below-lap')
+            {
+                // Large font
+                font-size: $font-largest;
+            }
+        }
+
+        // Make all header paragraphs larger font
+        > p
+        {
+            // Larger font
+            font-size: $font-larger;
+
+            // On smaller screens...
+            @include media('below-lap')
+            {
+                // Large font
+                font-size: $font-large;
+            }
+        }
+    }    
+}
+
+h2
+{
+    // Make sub-headers larger and colored
+    font-size: $font-largest;
+
+    // Orange
+    color: $color3;
+
+    // And space above
+    margin-top: $spacing-largest;
+}
+
+// Code
+pre
+{
+    // Make sure width doesn't go outside of container
+    white-space: pre-wrap;
+
+    border: 1px solid $color4;
+    padding: $spacing-large;
+    text-align: left;
+    color: $color5;
+}
+
+h3
+{
+    color: $color3;
+    text-align: left;
+    margin-bottom: 0;
+    font-weight: $font-weight-bold;
+}
+
+section.footer
+{
+    // Some padding around footer
+    padding: $spacing-normal;     
+
+    // Remove padding from section style
+    p 
+    {
+        // Smaller font size
+        font-size: $font-normal;
+
+        // Remove section margin style
+        margin: 0; 
+    }
+}
+
+h1.alternative
+{
+    // Bright theme color
+    color: $color2; 
+
+    // Mark inside here is bright neutral color
+    mark { color: $color6; }    
+}
+
+// Headers directly after headers
+h1 + h1
+{
+    // No top margin
+    // And negative to "remove" heading aboves margin
+    margin-top: -$spacing-large;
+}
+
+p
+{
+    // Larger spacing
+    line-height: 1.5;
+}
+
+.inline-whole-image
+{
+    // Decent size
+    height: 50vh;
+
+    // Max size
+    max-height: 500px;
+
+    @include media($breakpoint-below-laptop)
+    {
+        height: 40vw;
+    }
+
+    // Shrink to fit
+    background-size: contain;
+
+    // Don't repeat image
+    background-repeat: no-repeat;
+
+    // Keep him to the center
+    background-position: center;
+
+    // Bit of top/bottom margin
+    margin: $spacing-larger 0; 
+}
+
+.spaced-lines
+{
+    h1, p
+    {
+        // Huge margin
+        margin: $font-largest * 2 0;
+
+        // On smaller screens...
+        @include media('below-lap')
+        {
+            // Large margin
+            margin: $font-largest 0;
+        }
+    }
+}
+
+ul > li
+{
+    font-size: $font-large;
+    margin: $spacing-small 0;
+}
+
+// Quotes
+q
+{
+    display: block;
+    line-height: 2em;
+    background: $color4;
+    padding: $spacing-large;
+    font-style: italic;
+}
+
+
+table
+{
+    border-collapse: collapse;
+
+    width: 100%;
+
+    margin-bottom: $spacing-large;
+
+    tbody
+    {
+        border: 1px solid $color6;
+    
+        th
+        {
+            background: $color4;
+            border-bottom: 1px solid $color6;
+        }
+    
+        tr:not(:last-child)
+        {
+            border-bottom: 1px solid $color4;
+        }
+        
+        th, td
+        {
+            padding: $spacing-normal;
+            font-weight: $font-weight-bold;
+        }    
+    }
+}

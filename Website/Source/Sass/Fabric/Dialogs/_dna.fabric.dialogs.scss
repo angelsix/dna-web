@@ -1,0 +1,204 @@
+//
+//   Dialog Host
+//
+//   The host for dialogs allowing them to scroll
+//   or limiting them to the screen size and 
+//   scrolling the content intenrally to the dialog
+//
+.dialog-container
+{    
+    // Sit on top
+    z-index: $z-dialogs;
+
+    // If a dialog appears it should appear in the same place all the time
+    position: fixed;
+
+    // Center any dialogs inside it
+    text-align: center;
+
+    // Full screen
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+
+    // Use theme general dark
+    background: rgba($color7, 0.75);
+
+    // Margin around dialog
+    padding: $spacing-normal;
+
+    //
+    //   Mobile styles
+    //
+    @include media($breakpoint-mobile)
+    {
+        // Remove padding
+        padding: 0;
+
+        // Full width and height
+        align-items: stretch !important;
+
+        > .dialog 
+        {
+            display: inline-flex !important;
+            flex-grow: 1;
+        }
+
+        // NOTE: If you change this make sure to change
+        //       the &.scroll-content below to match
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        > .dialog > .content
+        {
+            @include scrolly($spacing-normal, true);
+        }
+
+        // Remove any scrolly padding fixes as we are now using flex
+        &::after { display: none !important; }        
+    }
+    
+    // If we want the main dialog to scroll not the inner content...
+    &:not(.scroll-content)
+    {
+        // Fix bottom padding inside scrollable host
+        // by adding a pseudo element at bottom the same height as the bottom-padding
+        // NOTE: Not needed when using flex container
+
+        // Allow dialog inside it to scroll
+        @include scrolly($spacing-normal);
+    }
+
+    // If we want the content to be scrollable
+    // instead of the entire dialog scrolling
+    &.scroll-content
+    {
+        // Display flex locks content to never overflow parent flex
+        display: flex;
+
+        // Center children (the dialog itself)
+        // Direction column stretches height
+        flex-direction: column;
+
+        // Center horizontally (as direction is column so align is horizontal)
+        align-items: center;
+
+        > .dialog > .content
+        {
+            overflow-y: auto;
+
+            // Inside contents will scroll if larger
+            @include scrolly($spacing-normal, true);
+        }
+    }
+
+    // If it should be full-height regardless of content
+    &.full-height
+    {
+        // NOTE: If you change this make sure to change
+        //       the mobile media query above to match
+
+        // But can grow larger and entire dialog scroll
+        &:not(.scroll-content)
+        {
+            // As a dialog that can scroll itself (not it's content)
+            // the host is not a flex box so just set the dialog
+            // to min-height of 100%
+            > .dialog { min-height: 100%; }
+        }   
+
+        // Full height with scrolling content
+        // As a dialog that should have it's content scroll once larger
+        // than the page, the host is a flex so the dialog cannot grow
+        // larger anyway. All that is left is to stretch it to
+        // fill the height regardless of content
+        > .dialog
+        {
+            flex-grow: 1;
+        }
+    }
+
+    // If it should be full-width regardless of content
+    &.full-width
+    {
+        // NOTE: If you change this make sure to change
+        //       the mobile media query above to match
+
+        // But height can grow past 100% and scroll...
+        &:not(.scroll-content)
+        {
+            // As a dialog that can scroll itself (not it's content)
+            // the host is not a flex box so just set the dialog
+            // display to block to give it 100% width
+            > .dialog { display: block; }
+        }
+
+        // Full width with scrolling content
+        &.scroll-content
+        {
+            // As a dialog that should have it's content scroll once larger
+            // than the page, the host is a flex so stretch align to
+            // fill the width regardless of content
+            align-items: stretch;        
+        }
+    }
+
+
+    //
+    //   Dialog
+    //
+    //   The dialog itself, inside the container
+    //
+    > .dialog
+    {
+        // Use theme background color 1
+        background: $color1;
+
+        // Flex container
+        display: inline-flex;
+
+        // Grow height
+        flex-direction: column;
+
+        // Rounded edges
+        border-radius: $spacing-small;
+
+        // Border with highlight color
+        border: 2px solid $color4;
+
+        // No rounded border for mobile
+        @include media($breakpoint-mobile)
+        {
+            border: 0;
+            border-radius: 0;
+        }
+
+        // Clip children backgrounds (like header/footer)
+        // to the border radius
+        overflow: hidden;
+
+        .header, .footer, .content 
+        {
+            // Some content padding
+            padding: $spacing-normal;
+        }
+            
+        .header
+        { 
+            border-bottom: 1px solid $color2; 
+        }
+
+        .footer
+        {
+            border-top: 1px solid $color2; 
+        }
+
+        .content
+        {
+            // Content should always take up all space of parent
+            // that is left after header/foot
+            flex-grow: 1;
+        }
+    }
+}

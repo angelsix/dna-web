@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>$$WebsiteTitle$$</title>
+    <link href="$$Images.FavIcon$$" rel="shortcut icon" type="image/x-icon" />
+    <link href="/Assets/Css/modern1.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="/Assets/Js/dna.core.js"></script>
+    <script type="text/javascript" src="/Assets/Js/dna.scroll.core.js"></script>
+    <script type="text/javascript" src="/Assets/Js/dna.delay.js"></script>
+    <script type="text/javascript" src="/Assets/Js/dna.scroll.scrolldown.js"></script>
+    <script type="text/javascript" src="/Assets/Js/dna.scroll.parallax.js"></script>
+    <script type="text/javascript" src="/Assets/Js/dna.scroll.animatein.js"></script>
+    <script type="text/javascript" src="/Assets/Js/dna.topmenu.js"></script>
+    <script type="text/javascript" src="/Assets/Js/dna.particles.js"></script>
+</head>
+
+<body>

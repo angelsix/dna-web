@@ -518,11 +518,17 @@ window.onload = checkForChanges;";
                 // Adding http response headers
                 context.Response.ContentType = MimeTypes.GetExtension(filePath);
                 context.Response.AddHeader("Date", DateTime.Now.ToString("r"));
-                context.Response.AddHeader("Last-Modified", fileInfo.LastAccessTime.ToString("r"));
+
+                // NOTE: Use last-modified date to now as MS Edge doesn't refresh CSS if the HTML page hasn't changed
+                //       So instead of fileInfo.LastAccessTime.ToString("r") use the date now
+                context.Response.AddHeader("Last-Modified", DateTime.Now.ToString("r"));
 
                 // If it is a HTML file just read it all in
                 if (filePath.ToLower().EndsWith(".htm") || filePath.ToLower().EndsWith(".html"))
                 {
+                    // Don't cache HTML
+                    context.Response.AddHeader("Cache-Control", "no-cache");
+
                     // Read all the HTML
                     var htmlContents = File.ReadAllText(filePath);
 

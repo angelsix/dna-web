@@ -1,0 +1,16 @@
+@import "dna.fabric.topmenu.standard";
+@import "dna.fabric.topmenu.standard2";
+
+.top-menu
+{
+    // Styling that is applied to every top menu
+
+    // Keep above everything
+    z-index: 1000;
+}
+
+// Headers will be the top items on a page, so push them below menu
+body > main > header
+{
+    padding-top: $top-menu-pushdown;
+}

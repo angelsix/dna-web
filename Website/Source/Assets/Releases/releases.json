@@ -1,0 +1,6 @@
+{
+    "Releases" : [
+        { "Version": "1.0.7.2", "Platform": "win-x32", "Path": "http://dnaweb.io/download/win32" },
+        { "Version": "1.0.7.2", "Platform": "win-x64", "Path": "http://dnaweb.io/download/win64" }
+    ]
+  }

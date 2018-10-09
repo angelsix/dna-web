@@ -7,10 +7,9 @@ To release a new version do the following steps:
 
 > **NOTE:** Updating last digit (y) won't cause old version to be removed. Update one of the first 3 digits to trigger an upgrade/remove old version
 
-- Update **index.md** in Dna Web GitHub Pages site to point to latest download
-- Update **previous.md** in Dna Web GitHub Pages site to point to older download
-- Update **changelog.md** in Dna Web GitHub Pages site
+- Update **changelog.dhtml** and **Releases.json** in DnaWeb website 
 - Build each installer (change configuration to Release)
-- Copy .msi files to Dna Web GitHub Pages Releases folder
+- Zip and copy installer files to DnaWeb.io Releases folder
 - Push changes to git
+- Push new website live
 

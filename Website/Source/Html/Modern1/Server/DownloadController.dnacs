@@ -7,10 +7,10 @@ namespace Fabric.Modern1.Server
     public class DownloadController : Controller
     {
         [Route("$$Urls.Downloads.Windows32$$")]
-        public IActionResult DownloadWindows32() => File("/Assets/Releases/DnaWeb-1.0.7.1-win32.zip", "application/x-zip-compressed", "DnaWeb.zip");
+        public IActionResult DownloadWindows32() => File("/Assets/Releases/DnaWeb-win32.zip", "application/x-zip-compressed", "DnaWeb.zip");
 
         [Route("$$Urls.Downloads.Windows64$$")]
-        public IActionResult DownloadWindows64() => File("/Assets/Releases/DnaWeb-1.0.7.1-win64.zip", "application/x-zip-compressed", "DnaWeb.zip");
+        public IActionResult DownloadWindows64() => File("/Assets/Releases/DnaWeb-win64.zip", "application/x-zip-compressed", "DnaWeb.zip");
 
         [Route("$$Urls.ApiReleases$$")]
         public IActionResult Releases() => File("/Assets/Releases/releases.json", "application/json");

@@ -1,0 +1,794 @@
+<!-- Top Navigation Menu -->
+<nav class="top-menu-standard slide-in-down" data-scrolldown-class="reduced">
+
+    <!-- Top Menu Contents -->
+    <div>
+
+        <!-- Logo -->
+        <div class="menu-logo">
+            <a href="/">
+                <img src="/Assets/Images/logo-text.png" />
+            </a>
+        </div>
+
+        <!-- Menu Icon -->
+        <div class="menu-icon">
+            <a href="#topmenu" data-toggle-class="expanded">
+                <i class="ion-navicon-round"></i>
+            </a>
+        </div>
+
+        <!-- Menu items -->
+        <ul data-topmenu-class="expanded">
+            <li>
+                <a href="/documentation">docs</a>
+            </li>
+            <li>
+                <a href="/changelog">changelog</a>
+            </li>
+            <li>
+                <a href="/download">download</a>
+            </li>
+            <li>
+                <a href="https://www.github.com/angelsix/dna-web" target="_blank">source</a>
+            </li>
+        </ul>
+
+    </div>
+
+</nav>
+
+<main class="documentation">
+
+    <!-- Engine -->
+    <section class="container single-vcenter">
+        <div class="grid-wrapper">
+            <div class="grid">
+                <div class="col">
+                    <header class="faded" data-delay-add="slide-in-up-group" data-delay="1">
+                        <h1>DnaWeb Engine</h1>
+                        <p>When first building your website you don’t typically work directly in ASP.Net, or PHP or
+                            other final server languages. You build your website in plain static HTML/CSS, then once
+                            done you convert them to headers, footers, cshtml files etc...</p>
+                        <q><strong><mark>Note:</mark></strong> All brand icons are trademarks of their respective
+                            owners. The use of these trademarks does not indicate endorsement of the trademark holder
+                            by me, nor vice versa. </q>
+
+                        <!-- The issue with HTML -->
+                        <h2>The issue with HTML</h2>
+                        <p>The issue with doing plain HTML is that is not your final format. Plain HTML cannot have
+                            shared headers and footers that are the same throughout pages. It cannot have variables,
+                            multiple outputs, multiple formats or anything else.</p>
+                        <p>Changing the header of one page, you need to change the header of all other pages, manually,
+                            one at a time. The same for any other shared values such as page links that could be
+                            anywhere in the pages.   Once you start converting your website to your final server code
+                            (cshtml for example) the issues really start. Now you have 2 separate codes to maintain
+                            (static HTML and cshtml).</p>
+
+                        <!-- Enter, DnaWeb -->
+                        <h2>Enter, DnaWeb</h2>
+                        <p>Using DnaWeb allows you to write completely standard HTML code, and just insert
+                            HTML comments to do extra useful things. For example, let’s create a shared header and
+                            footer as normal HTML, simply with an extension of dhtml instead of .html</p>
+
+                        <!-- Header -->
+                        <h3>header.dhtml</h3>
+                        <pre>
+&lt;html&gt;
+
+  &lt;head&gt;
+    &lt;title&gt;My title&lt;/title&gt;
+  &lt;/head&gt;
+
+  &lt;body&gt;</pre>
+
+                        <!-- Footer -->
+                        <h3>footer.dhtml</h3>
+                        <pre>
+  &lt;/body&gt;
+&lt;/html&gt;</pre>
+
+                        <p>Now we can create all our pages in regular HTML format, but with comments to insert the
+                            header and footer.</p>
+
+                        <pre>
+&lt;!--&#64; include header &#64;--&gt;
+  &lt;h1&gt;Header&lt;/h1&gt;
+&lt;!--&#64; include footer &#64;--&gt;</pre>
+
+                        <!-- Outputs -->
+                        <h2>Outputs</h2>
+                        <p>By default if your file is called index.dhtml then the output file will be in the same
+                            directory called index.html. (<a href="#configuring-dnaweb">unless a Html Output Path is
+                                specified in a configuration
+                                file</a>)</p>
+                        <p>To modify the output filename and path (relative to the input file), in your dnaweb file
+                            specify the new name in the output tag. You can specify more than one output to generate
+                            multiple files with different names in different locations.</p>
+
+                        <pre>
+&lt;!--&#64; output home &#64;--&gt;
+&lt;!--&#64; output extra &#64;--&gt;
+&lt;!--&#64; include header &#64;--&gt;
+  &lt;h1&gt;Header&lt;/h1&gt;
+&lt;!--&#64; include footer &#64;--&gt;</pre>
+
+                        <!-- Partials -->
+                        <h2>Partials</h2>
+                        <p>Some files like headers and footers should not generate files themselves, they are simply
+                            partial files to be included.</p>
+
+                        <p>To prevent DnaWeb from generating output for a file, you can either start the filename with
+                            an
+                            underscore such as <mark>_header.dhtml</mark> or add the partial tag to it, like so:</p>
+
+                        <!-- Header -->
+                        <h3>header.dhtml</h3>
+                        <pre>
+&lt;!--&#64; partial &#64;--&gt;
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;My title&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;</pre>
+
+                        <!-- Variables -->
+                        <h2>Variables</h2>
+                        <p>Another useful feature is the ability to create variables that can be inserted anywhere in
+                            the HTML. A good example is using them for page titles and URLs.</p>
+
+                        <pre>
+&lt;!--$ 
+  &lt;Data&gt;
+    &lt;Variable Name=&quot;Title&quot;&gt;My title&lt;/Variable&gt;
+    &lt;Variable Name=&quot;HomeUrl&quot;&gt;https://github.com/angelsix/dna-html-engine&lt;/Variable&gt;
+  &lt;/Data&gt;
+$--&gt;
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;$&zwnj;$Title$&zwnj;$&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;p&gt;Get the source code &lt;a href=&quot;$&zwnj;$HomeUrl$&zwnj;$&quot; /&gt;here&lt;/a&gt;.
+  &lt;/body&gt;
+&lt;/html&gt;</pre>
+
+                        <p>To create variables, first start a special code block comment using
+                            <mark>&lt;!--$</mark> and ending with <mark>$--&gt;</mark>. Inside that place the <Data></Data>
+                            tag just like a HTML tag. </p>
+
+                        <p>Inside the data element you can now create variables with names and values just like any
+                            XML/HTML element.</p>
+
+                        <p>To then use them inside your HTML, use the given name you created, wrapped inside <mark>$&zwnj;$...$&zwnj;$</mark>,
+                            for example <mark>$&zwnj;$Title$&zwnj;$</mark></p>
+
+                        <!-- Dna Variables -->
+                        <h2>Dna Variables</h2>
+                        <p>As well as defining variables yourself, DnaWeb has a bunch of in-built useful variables, you
+                            use in just the same way with the prefix <mark>dna</mark>.</p>
+
+                        <table>
+                            <tbody>
+                                <tr>
+                                    <th>Dna Variable</th>
+                                    <th>Output</th>
+                                    <th>Description</th>
+                                </tr>
+                                <tr>
+                                    <td><mark>$&zwnj;$dna.Date("MMMM dd, yyyy")$&zwnj;$</mark></td>
+                                    <td>October 10, 2017</td>
+                                    <td>The current date/time in the specified string format</td>
+                                </tr>
+                                <tr>
+                                    <td><mark>$&zwnj;$dna.ProjectPath$&zwnj;$</mark></td>
+                                    <td>D:\Some\Folder</td>
+                                    <td>The current directory where the main project is (where DnaWeb has been run
+                                        from)</td>
+                                </tr>
+                                <tr>
+                                    <td><mark>$&zwnj;$dna.FilePath$&zwnj;$</mark></td>
+                                    <td>D:\Some\Folder\file.dhtml</td>
+                                    <td>The full path of the current file this variable resides within</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <q>If you have any requests for more variables, simply ask for them in the <a href="https://www.github.com/angelsix/dna-web">GitHub
+                                Repo</a></q>
+
+                        <!-- Output Profiles -->
+                        <h2>Output Profiles</h2>
+
+                        <p>Sometimes you need multiple outputs of a single file. For example the static HTML output and
+                            the server cshtml file. Profiles allow you to specify a name for a profile, then customize
+                            variables, output filenames and more.</p>
+
+                        <p>Here is an example of generating three files from the same file, each with their own header
+                            text:</p>
+
+                        <pre>
+&lt;!--&#64; output index-release &#64;--&gt;
+&lt;!--&#64; output index-uat:uat &#64;--&gt;
+&lt;!--&#64; output index-debug:debug &#64;--&gt;
+&lt;!--$ 
+  &lt;Data&gt;
+    &lt;Variable Name="Title"&gt;My title&lt;/Variable&gt;
+    &lt;Variable Name="Title" Profile="debug"&gt;My debug title&lt;/Variable&gt;
+    &lt;Profile Name="uat"&gt; 
+      &lt;Variable Name="Title"&gt;My user title&lt;/Variable&gt;
+    &lt;/Profile&gt;
+  &lt;/Data&gt;
+$--&gt;
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;My title&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;h1&gt;$&zwnj;$Title$&zwnj;$&lt;/h1&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</pre>
+
+                        <p>As you can see, you define variables as you normally would, except you can provide a
+                            <mark>Profile</mark> attribute to the variable which means that variable only applies to
+                            outputs that
+                            define a profile name that matches.</p>
+
+                        <p>You can also create a <mark>Profile</mark> element and then any variables inside of that
+                            element
+                            automatically get that profile name.</p>
+
+                        <p>Finally, to generate an output file that uses a specific profile and so specific variables
+                            end the filename with a colon : and then the profile name.</p>
+
+                        <!-- Input Profiles -->
+                        <h2>Input Profiles</h2>
+
+                        <p>As with output profiles, you can use the same profile technique to only include files for
+                            specific profiles. The perfect use-case for this is ASP Net cshtml files that use a layout
+                            file. As such all cshtml files of specific pages don’t include a header and footer, they
+                            simply specify the layout to use or the default one is chosen.</p>
+
+                        <p>Here is an example that generates a full static HTML page called index.html and an ASP.Net
+                            index.cshtml page that doesn’t include the header or footer.</p>
+
+                        <pre>
+&lt;!--&#64; output index:wrapped &#64;--&gt;
+&lt;!--&#64; output index.cshtml &#64;--&gt; 
+&lt;!--&#64; include header:wrapped &#64;--&gt;
+  &lt;h1&gt;Header&lt;/h1&gt;
+&lt;!--&#64; include footer:wrapped &#64;--&gt;</pre>
+
+                        <p>As you can see by specifying a profile named <mark>wrapped</mark> then setting the
+                            index.html output to
+                            use that profile, and the includes for the header and footer to only include the files for
+                            the profile <mark>wrapped</mark> we end up with just the header <mark>&lt;h1&gt;</mark> in
+                            the .cshtml file but the
+                            complete file for the .html file.</p>
+
+                        <!-- Inline Data -->
+                        <h2>Inline Data</h2>
+                        <p>Sometimes you want to include some small and simple HTML into your file inline, and not
+                            create a separate include file just for a few lines of HTML or javascript.</p>
+
+                        <p>You can inline data that will get inserted for all outputs, for outputs that do not specify
+                            a profile, and for specific profiles.</p>
+
+                        <pre>
+&lt;!--&#64; output server:server &#64;--&gt;
+&lt;!--&#64; output local &#64;--&gt;
+  &lt;h1&gt;Header&lt;/h1&gt;
+&lt;!--&#64; inline &lt;h1&gt;This is in all outputs&lt;/h1&gt; &#64;--&gt;
+&lt;!--&#64; inline:! &lt;h1&gt;This is in default outputs only&lt;/h1&gt; &#64;--&gt;
+&lt;!--&#64; inline:server &lt;h1&gt;This is in server output only&lt;/h1&gt; &#64;--&gt;</pre>
+
+                        <p>The above will generate a local.html file (that does not specify any profile) which will
+                            contain:</p>
+
+                        <pre>
+&lt;h1&gt;Header&lt;/h1&gt;
+&lt;h1&gt;This is in all outputs&lt;/h1&gt;
+&lt;h1&gt;This is in default outputs only&lt;/h1&gt;</pre>
+
+                        <p>And a server.html file (that specifies the profile server) which will contain:</p>
+
+                        <pre>
+&lt;h1&gt;Header&lt;/h1&gt;
+&lt;h1&gt;This is in all outputs&lt;/h1&gt;
+&lt;h1&gt;This is in server output only&lt;/h1&gt;</pre>
+
+                        <p>As you can see, just like outputs and inputs, you can add a colon : then a profile name to
+                            the end of the inline name statement.</p>
+
+                        <q><strong><mark>NOTE:</mark></strong> The bang (!) instead of a profile name means to only
+                            include if there is explicitly no
+                            profile selected. Without the ! the inline would be included for outputs that specify a
+                            profile as well as those that do not.</q>
+
+                        <!-- C# and Beyond -->
+                        <h1>C# and Beyond</h1>
+                        <p>The engine is not limited to HTML files, it was simply created initially to aid in the
+                            general static web development, however it’s really a universal engine.</p>
+
+                        <p>When working with ASP.Net files you typically end up creating links between the HTML and the
+                            back-end C# code. As such, it would be great to be able to share variables between the two.
+                            With the help of DnaWeb you can.</p>
+
+                        <p>Say you have a menu element you want to access from the C# ASP.Net side through the DOM and
+                            you need the element ID. Typically you would have the ID value stored in ASP.Net in a code
+                            file, and you would have the ID typed into the html/cshtml file as well. You would have to
+                            keep both names the same and if you edit one you need to remember to edit the other.</p>
+
+                        <p>Instead, using the C# engine you can specify the ID as a variable and use it to generate
+                            both the cshtml file and a C# code file.</p>
+
+                        <p>Place your variable in a partial file:</p>
+
+                        <!-- Variables -->
+                        <h3>variables.dhtml</h3>
+                        <pre>
+&lt;!--&#64; partial &#64;--&gt;
+&lt;!--$ 
+&lt;Data&gt;
+  &lt;!-- The shared values for the application --&gt;
+  &lt;Group Name="SharedVariables" Profile=""&gt;
+    &lt;!-- Comment for some ID --&gt;
+    &lt;Variable Name="SomeId1" Type="string"&gt;SomeId&lt;/Variable&gt;
+    
+    &lt;!-- 
+    This is a multiline comment 
+    that maintains spacing
+    and indentation level
+    --&gt;
+    &lt;Variable Name="SomeId2" Type="string"&gt;AnotherID&lt;/Variable&gt;
+
+    &lt;!-- Another comment --&gt;
+    &lt;Variable Name="MyString" Type="string"&gt;This can be a multiline 
+    string&lt;/Variable&gt;
+  &lt;/Group&gt;
+&lt;/Data&gt;
+$--&gt;</pre>
+
+                        <p>Notice the use of a new element called a <mark>Group</mark>. A group simply groups a bunch
+                            of variables
+                            and will be used to automatically add <mark>#region</mark> areas to the code file. You can
+                            still give
+                            the variables profile names and anything else you do with a variable.</p>
+
+                        <p>Now let’s use those variables in a dnaweb file to create a cshtml file as normal:</p>
+
+                        <!-- Index -->
+                        <h3>index.dhtml</h3>
+                        <pre>
+&lt;!--&#64; include variables &#64;--&gt;
+&lt;h1&gt;My Id 1 is: $&zwnj;$SomeId1$&zwnj;$&lt;/h1&gt;
+&lt;h1&gt;My Id 2 is: $&zwnj;$SomeId2$&zwnj;$&lt;/h1&gt; 
+&lt;h1&gt;My string is: $&zwnj;$MyString$&zwnj;$&lt;/h1&gt;</pre>
+
+
+                        <p>Then let’s generate a C# file that can be included in our ASP.Net project to give us access
+                            to the exact same variables are are used in the cshtml file:</p>
+
+                        <!-- Codefile -->
+                        <h3>codefile.cs</h3>
+                        <pre>
+&lt;!--&#64; output variables &#64;--&gt; 
+namespace SomeNamespace 
+{
+  /// &lt;summary&gt; 
+  /// A generated class from DnaWeb 
+  /// &lt;/summary&gt; 
+  public class MyVariablesClass 
+  { 
+    &lt;!--# properties group=SharedVariables #--&gt; 
+  }
+}</pre>
+
+                        <p>That will generate a new C# class file and replace the
+                            <mark>&lt;!--# properties #--&gt;</mark> value with the variables inside the group
+                            <mark>SharedVariables</mark>.</p>
+
+                        <p>The variables will be generated as public properties of the correct type (string, boolean,
+                            int etc..).</p>
+
+                        <p>The comments for the properties will come from the comments specified in the variables file.</p>
+
+                        <p>The variables will also be wrapped in a <mark>#region</mark> with the same name as the
+                            group.</p>
+
+                        <!-- Sass -->
+                        <h1>Sass</h1>
+
+                        <p>DnaWeb has the ability to process Sass files (<strong>.scss</strong>) and generate <strong>.css</strong>
+                            files from them.</p>
+
+                        <p>Simply run DnaWeb in the directory of your choice and any <strong>.scss</strong> files will
+                            automatically produce css files as they are changed.</p>
+
+                        <!-- Live Server -->
+                        <h1>Live Server</h1>
+
+                        <p>Another common tool used in the static web development lifecycle is a way to serve the
+                            static html files in a web server so you can do <strong>http://localhost:5000/about</strong>
+                            for example to
+                            serve an about page, typically called <mark>about.html</mark></p>
+
+                        <p>Now with DNA Live Servers you can.</p>
+
+                        <p>Also the ability to watch live in a browser for file changes and refresh the page
+                            automatically is very beneficial. This feature is also included in Live Server.</p>
+
+                        <p>To have DnaWeb spin up a server for you automatically on a free port on your local machine,
+                            and start serving the html and other content files in a specific folder, just specify an
+                            array of paths in any <mark>dna.config</mark> file. The paths are relative to the <mark>dna.config</mark>
+                            file
+                            location.</p>
+
+                        <p>For example, the <strong>Examples</strong> folder in this repository has a folder called
+                            <mark>09 - LiveServer</mark> and inside it the DnaWeb source files are there. The
+                            <mark>dna.config</mark> file specfies that the output (html) files go to <mark>../Outputs/09</mark>
+                            folder, and so we also set up a Live Server to that folder
+                            too.</p>
+
+                        <pre>
+{
+    "outputPath": "../Outputs/09",
+    "liveServers": [ "../Outputs/09" ]
+}</pre>
+
+                        <p>Now just start DnaWeb in your source folder and a Live Server will be created and your
+                            browser automatically opened to the new server address, along with the <mark>index.html</mark>
+                            file in the <mark>Outputs/09</mark> folder being served by default.</p>
+
+                        <img src="/Assets/Images/liveserver.png" />
+
+                        <p>If you then typed in <strong>http://localhost:51767/about</strong> for example it would
+                            attempt to find and
+                            load a html file in <mark>Outputs/09</mark> called <mark>about.htm</mark> (or .html). </p>
+
+                        <p>Any other requests such as <strong>http://localhost:51767/Assets/Css/style.css</strong> will
+                            then look for <mark>Outputs/09/Assets/Css/style.css</mark> and serve that.</p>
+
+                        <p>Mime types will be honoured, and the server will server the files length, date, modified
+                            date and so on.</p>
+
+                        <p>Go ahead and edit a .dhtml file, a .scss file or even a file directly in the output folder
+                            if you like, and watch the website automatically refresh.
+                        </p>
+
+                        <!-- Live Data Sources -->
+                        <h1>Live Data Sources</h1>
+
+                        <p>A Live Data Source for DnaWeb provides the ability to include and instantly make use of
+                            snippets and variables live while working on your web project. This can be very useful for
+                            rapid workflow.</p>
+
+                        <p>The source folder contains a <strong>readme.md</strong> file explaining the Live Data
+                            source, what who made
+                            it, what's inside and general information.</p>
+
+                        <h2>Live Variables</h2>
+
+                        <p>Anywhere inside any file of a DnaWeb engine (such as a .dhtml file), you can type the
+                            following:</p>
+
+                        <pre>$&zwnj;$!dna.variablename$&zwnj;$</pre>
+
+                        <p>Save the file and if your editor (such as <a href="https://code.visualstudio.com/" target="_blank">VS
+                                Code</a>) supports live updating of the file you will instantly see what you typed gets
+                            replaced with the actual contents of the Live Variable named <mark>variablename</mark>
+                            inside the Live Data Source with a prefix of <mark>dna</mark>. </p>
+
+                        <q><strong><mark>NOTE:</mark></strong> There is no need to provide the official default prefix
+                            of <mark>dna</mark>. If no prefix is provided then <mark>dna</mark> is presumed. This means
+                            <mark>$&zwnj;$!dna.variablename$&zwnj;$</mark> would simply become <mark>$&zwnj;$!variablename$&zwnj;$</mark></q>
+
+                        <p>For example the official Live Data Source has a variable named <mark>html</mark> that
+                            injects the most
+                            up-to-date official blank HTML document structure. Typing <mark>$&zwnj;$!html$&zwnj;$</mark>
+                            into a <strong>.dhtml</strong> file and saving it will update that file replacing the
+                            <mark>$&zwnj;$!html$&zwnj;$</mark> text with:</p>
+
+                        <pre>
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en-GB"&gt;
+    &lt;head&gt;
+        &lt;meta charset="utf-8"&gt;
+        &lt;title&gt;Title&lt;/title&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+    &lt;/body&gt;
+&lt;/html&gt;</pre>
+
+                        <!-- Live Templates -->
+                        <h1>Live Templates</h1>
+
+                        <p>As well as small variables/snippets it is also useful when developing a website to start
+                            from an entire template, such as a full responsive website blank template.</p>
+
+                        <p>Live Templates allow you to extract an entire template to the current project folder with a
+                            simple command:</p>
+
+                        <pre>new template name</pre>
+
+                        <p>Where <mark>name</mark> is the Live Template's <strong>prefix.name</strong>, for example
+                            <mark>dna.blank</mark> for the Blank template from the DnaWeb official Live Data Source.</p>
+
+                        <q><strong><mark>NOTE:</mark></strong> Again as with variables, not specifying a prefix will
+                            presume dna as the prefix</q>
+
+                        <p>For example the following being typed into the DnaWeb command interface will instantly
+                            extract the <mark>fabric</mark> template into the current folder:</p>
+
+                        <pre>new template fabric</pre>
+
+                        <!-- Making your own Live Data Source -->
+                        <h2>Making your own Live Data Source</h2>
+
+                        <p>To make your own take a look at our example on <a href="https://github.com/angelsix/dna-web/tree/master/Source/Dna.Web.Core/LiveData/Source"
+                                target="_blank">GitHub</a></p>
+
+                        <!-- Static Folders -->
+                        <h1>Static Folders</h1>
+
+                        <p>Sometimes you have static files that should be in your websites root, such as images,
+                            pre-compiled JavaScript libraries, font files and so on.</p>
+
+                        <p>Instead of having them in the output folder tpyically called WebRoot along with mostly
+                            compiled/generated files, making it an ugly mix folder between generated files and static
+                            files, you can create a <strong>Static Folder</strong> anywhere you like and configure it
+                            to output to a specific location in your web root.</p>
+
+                        <p>A good example is an <strong>Assets</strong> folder containing Fonts and images.</p>
+
+                        <q>Check out the <a href="https://github.com/angelsix/dna-web/tree/develop/Examples">Examples</a> folder for more
+                            information, specifically the <strong>Static Folders</strong> example.</q>
+
+                        <!-- Installing DnaWeb -->
+                        <h1>Installing DnaWeb</h1>
+
+                        <p>If you want to create your own Windows installer, download and install <a href="https://github.com/angelsix/dna-web/tree/develop/Examples">Wix</a>
+                            and then right click on the <strong>Dna.Web.Installer</strong> project in Visual Studio to
+                            compile an msi file. The output of the compile will be in a folder inside <strong>Dna.Web.Installer</strong>
+                            called Installs</p>
+
+                        <q>Alternatively download a pre-made version from <a href="/download">here</a></q>
+
+                        <p>Once installed on your system, DnaWeb will be a self-contained .Net Core application in your
+                            Program Files folder under DnaWeb. </p>
+
+                        <p>This installed path will also be added to your systems <strong>PATH</strong> variable. This
+                            means you can run DnaWeb from anywhere in command line.</p>
+
+                        <!-- Running DnaWeb on a Project/Folder -->
+                        <h1>Running DnaWeb on a Project/Folder</h1>
+
+                        <p>Let's say you have a folder now containing your website, its assets, images, css, html,
+                            dnaweb files and so on. At the start of your work day, you would just navigate to that
+                            folder in Explorer, then in the address bar type dnaweb to open and run a DnaWeb engine in
+                            that folder.</p>
+
+                        <p><img src="/Assets/Images/addressbar.png" /></p>
+                        <p><img src="/Assets/Images/dnaweb.png" /></p>
+
+                        <p>This simply finds the self-contained DnaWeb.exe file located in the <strong>Program Files</strong>
+                            installation folder, then runs DnaWeb.</p>
+
+                        <p>DnaWeb will first load the default configuration file from the install folder, and then look
+                            in the executing folder (where you ran dnaweb from command line) for a configuration file
+                            also, and load in your custom project settings. Finally it will check any command line
+                            arguments and load those. That is also the order of precedence so the arguments override
+                            the project folders configuration which overrides the default configuration. </p>
+
+                        <p>Now just edit/create your files and DnaWeb will process them automatically. Once done press
+                            enter twice to exit DnaWeb.</p>
+
+                        <!-- Run DnaWeb on Prebuild Visual Studio -->
+                        <h1>Run DnaWeb on Prebuild Visual Studio</h1>
+
+                        <p>If you would like continuous integration, or run a build server, or simply want to make sure
+                            every time you build your Visual Studio project that any DnaWeb files are processed, you
+                            can run the engine as a pre-build command to Visual Studio to run every time you build your
+                            project.</p>
+
+                        <p>Change your projects pre-build command to call a .bat or .cmd batch file. Then in that batch
+                            file write:
+                        </p>
+
+                        <!-- Direct Invoke from compiled source -->
+                        <h3>Direct Invoke from compiled source</h3>
+                        <pre>dotnet Dna.Web.CommandLine.dll . /a /c monitor=../DnaWeb</pre>
+
+                        <!-- Invoking from an installed instance -->
+                        <h3>Invoking from an installed instance</h3>
+                        <pre>dnaweb /a /c monitor=../DnaWeb</pre>
+
+                        <h1>Compiling DnaWeb</h1>
+
+                        <p>Open up the Source folder, then the <strong>Dna.Web.sln</strong> solution file. With Visual
+                            Studio open make sure <strong>Dna.Web.CommandLine</strong> is set as the startup project.
+                            If not right click <strong>Dna.Web.CommandLine</strong> and select Set as Startup Project.</p>
+
+                        <p>Now press <strong>F5</strong> to run the engine. This will run the engine, opening a command
+                            line window that
+                            should output where it is listening for file changes and state <strong>Press enter to stop</strong>.</p>
+
+                        <p>By default the engine looks in the folder it is run in, so from Visual Studio that is the
+                            <strong>Dna.Web.CommandLine</strong> folder. </p>
+
+                        <!-- Configuring DnaWeb -->
+                        <h1 id="configuring-dnaweb">Configuring DnaWeb</a></h1>
+
+                        <p>Settings such as the monitor path, whether to generate all files on start, and whether to
+                            close right after can be set in a <mark>dna.config</mark> file in the same directory where
+                            you run
+                            DnaWeb from.</p>
+
+                        <p>An example dna.config file is below:</p>
+
+                        <!-- dna.config -->
+                        <h3>dna.config</h3>
+                        <pre>
+{
+  "monitor": ".",
+  "generateOnStart": "All",
+  "processAndClose": "False",
+  "logLevel": "Minimal",
+  "outputPath": "../WebRoot",
+  "scssOutputStyle": "Compressed",
+  "scssGenerateSourceMap": "False",
+  "openVsCode": "True",
+  "staticFolders": [ { "source": "Assets", "destination": "../WebRoot/Assets" } ]
+  "liveServers": [ "../WebRoot" ],
+  "liveDataSources": [
+  {
+    "prefix": "dna",
+    "source": "https://raw.githubusercontent.com/angelsix/dna-web/develop/Source/Dna.Web.Core/LiveData/dna.live.config"
+  }
+  ],
+  "cachePath": "%LOCALAPPDATA%\\DnaWeb\\%VERSION%\\Cache\\"
+}</pre>
+
+                        <table>
+                            <tbody>
+                                <tr>
+                                    <th>Property</th>
+                                    <th>Description</th>
+                                </tr>
+                                <tr>
+                                    <td><mark>monitor</mark></td>
+                                    <td>A relative or absolute path to monitor, based on the folder where DnaWeb was
+                                        called from</td>
+                                </tr>
+                                <tr>
+                                    <td><mark>generateOnStart</mark></td>
+                                    <td>None, All. Specifies whether to generate all DnaWeb file types on startup
+                                        without the need for them to be changed first</td>
+                                </tr>
+                                <tr>
+                                    <td><mark>processAndClose</mark></td>
+                                    <td>False, True. Whether DnaWeb closes right after opening and optionally
+                                        generating all files. Typically used in combination with generateOnStart being
+                                        set to All</td>
+                                </tr>
+                                <tr>
+                                    <td><mark>logLevel</mark></td>
+                                    <td>None, Minimal, Informative, All The amount of detail to output in the log</td>
+                                </tr>
+                                <tr>
+                                    <td><mark>outputPath</mark></td>
+                                    <td>Sets the output path for all files, relative to this configuration files
+                                        location
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><mark>scssOutputStyle</mark></td>
+                                    <td>Nested, Expanded, Compact, Compressed, Inspect Sets the css output style</td>
+                                </tr>
+                                <tr>
+                                    <td><mark>scssGenerateSourceMap</mark></td>
+                                    <td>False, True If a *.css.map file should be created for the css files</td>
+                                </tr>
+                                <tr>
+                                    <td><mark>openVsCode</mark></td>
+                                    <td>False, True If true and VS Code is installed, it will be opened on startup with
+                                        the current monitor folder as the source</td>
+                                </tr>
+                                <tr>
+                                    <td><mark>staticFolders</mark></td>
+                                    <td>An array of static folder details (source/destination) used to configure a
+                                        Static Folder
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><mark>liveServers</mark></td>
+                                    <td>An array of strings that specify paths (relative to the configuration file)
+                                        that should have a Live Server spun up for them</td>
+                                </tr>
+                                <tr>
+                                    <td><mark>liveDataSources</mark></td>
+                                    <td>An array of Live Data Sources</td>
+                                </tr>
+                                <tr>
+                                    <td><mark>cachePath</mark></td>
+                                    <td>The relative or absolute path where any DnaWeb cache data goes (the default is
+                                        the Local App Data folder of the machine)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p>These values can also be overridden when calling DnaWeb from command line by passing in
+                            command line arguments:</p>
+
+
+                        <table>
+                            <tbody>
+                                <tr>
+                                    <th>Argument</th>
+                                    <th>Description</th>
+                                </tr>
+                                <tr>
+                                    <td><mark>monitor=</mark></td>
+                                    <td>Overrides any monitor path specified in dna.config files</td>
+                                </tr>
+                                <tr>
+                                    <td><mark>logLevel=</mark></td>
+                                    <td>Overrides the log level</td>
+                                </tr>
+                                <tr>
+                                    <td><mark>outputPath=</mark></td>
+                                    <td>Overrides the Output Path</td>
+                                </tr>
+                                <tr>
+                                    <td><mark>scssOutputStyle=</mark></td>
+                                    <td>Overrides the Scss Output Style</td>
+                                </tr>
+                                <tr>
+                                    <td><mark>scssGenerateSourceMap=</mark></td>
+                                    <td>Overrides the Scss Generate Source Map</td>
+                                </tr>
+                                <tr>
+                                    <td><mark>openVsCode=</mark></td>
+                                    <td>Overrides the Open VS Code</td>
+                                </tr>
+                                <tr>
+                                    <td><mark>/a</mark></td>
+                                    <td>Overrides any generate on start options specified in dna.config files and sets
+                                        it to All</td>
+                                </tr>
+                                <tr>
+                                    <td><mark>/c</mark></td>
+                                    <td>Overrides any process and close options specified in dna.config files and sets
+                                        it to True</td>
+                                </tr>
+                                <tr>
+                                    <td><mark>cachePath=</mark></td>
+                                    <td>Overrides any cache path setting specified in dna.config files</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <q>You can also place a <mark>dna.config</mark> file in any sub-folder inside the monitor path
+                            to apply settings to that specific folder and it's children. Configuration files in child
+                            folders override any settings specified in a parent folders configuration file.</q>
+
+                        <p>The Visual Studio project has a debug argument set to <strong>monitor=../../Examples</strong>
+                            so that when debugging it monitors the Examples folder of the solution.</p>
+
+                        <p>Now with the engine running, edit any file in the Examples folder and the console will
+                            detect the change and automatically process the files and generate the outputs. All details
+                            are output to the console window.</p>
+
+                        <p>The typical work-cycle when using DnaWeb is to start the engine up prior to working,
+                            then work with your DnaWeb files as required, meaning any edits to those files will
+                            auto-generate your HTML/C#/Sass files <mark>instantly..!</mark></p>
+
+                    </header>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+

@@ -60,7 +60,7 @@
     <InstallExecuteSequence>
 
       <!-- Launch webpage after an install install -->
-      <Custom Action="SetOpenURL" After="InstallFinalize">NOT Installed AND NOT REMOVEM</Custom>
+      <Custom Action="SetOpenURL" After="InstallFinalize">NOT Installed AND NOT REMOVE</Custom>
       <Custom Action="OpenURL" After="SetOpenURL">NOT Installed AND NOT REMOVE</Custom>
       
     </InstallExecuteSequence>

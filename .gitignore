@@ -185,11 +185,10 @@ $RECYCLE.BIN/
 # Mac desktop service store files
 .DS_Store
 
-Website/ServerRoot/Controllers/
-
-Website/ServerRoot/Views/
-
-Website/ServerRoot/wwwroot/
+# NOTE: We inclde these now so the docker deploy is easier
+#Website/ServerRoot/Controllers/
+#Website/ServerRoot/Views/
+#Website/ServerRoot/wwwroot/
 
 Website/Source/Assets/Css/
 

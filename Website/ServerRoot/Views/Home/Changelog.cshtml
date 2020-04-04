@@ -1,0 +1,145 @@
+<!-- Top Navigation Menu -->
+<nav class="top-menu-standard slide-in-down" data-scrolldown-class="reduced">
+
+    <!-- Top Menu Contents -->
+    <div>
+
+        <!-- Logo -->
+        <div class="menu-logo">
+            <a href="/">
+                <img src="/Assets/Images/logo-text.png" />
+            </a>
+        </div>
+
+        <!-- Menu Icon -->
+        <div class="menu-icon">
+            <a href="#topmenu" data-toggle-class="expanded">
+                <i class="ion-navicon-round"></i>
+            </a>
+        </div>
+
+        <!-- Menu items -->
+        <ul data-topmenu-class="expanded">
+            <li>
+                <a href="/documentation">docs</a>
+            </li>
+            <li>
+                <a href="/changelog">changelog</a>
+            </li>
+            <li>
+                <a href="/download">download</a>
+            </li>
+            <li>
+                <a href="https://www.github.com/angelsix/dna-web" target="_blank">source</a>
+            </li>
+        </ul>
+
+    </div>
+
+</nav>
+
+<main class="changelog">
+
+    <!-- Engine -->
+    <section class="container single-vcenter">
+        <div class="grid-wrapper">
+            <div class="grid">
+                <div class="col">
+                    <header class="faded" data-delay-add="slide-in-up-group" data-delay="1">
+                        <h1>Changelog</h1>
+                        <pre>
+Version 1.0.7.2
+
+    Point to new website and Git URLs
+
+Version 1.0.7.1
+
+    Fixed circular reference issue
+
+Version 1.0.7
+
+    Updated application icon
+    Fixed VS Code opening on automated process and close jobs
+
+Version 1.0.6
+
+    Added Static Folders to allow syncing of a Source folder to an output folder (ideal for WebRoot outputs)
+    Added Generation Reports
+    Added generate command so you can regenerate all files on demand
+    Support console close key combination to exit (for example Ctrl+C on Windows)
+    Fixed server crashing bug causing never-ending close loop
+
+Version 1.0.5
+
+    Adding Open VS Code on launch option
+    Detects and informs user if update is available
+    Fixed Live Server bug for UTF content in HTML (invalid length)
+    Fixed Live Data support for Zips containing / instead of \ and for zips without explicit folder entities
+
+Version 1.0.4
+
+    Fix include paths without file extension not working when filename has . in the name
+    Fixed infinite refresh bug if URL has # in it
+    Added ability to use relative source paths in dna.live.config files located on websites
+    Added new config command to generate a fully filled out default dna.config file
+
+Version 1.0.3
+
+    Process and Close won't spin up Live Servers
+    Fix Live Server Auto-Refresh not always working
+    Scss Files can not specify Output Style and Generate Source Map
+
+Version 1.0.2
+
+    Live editing of dna.config file support without restarting DnaWeb
+    Allow . in Live Variable/Template names
+    Allow includes between engine types without file extension
+    dna.config files now detects changes without having to restart
+
+Version 1.0.1.6
+
+    Add Live Data Sources support for Live Variables and Live Templates
+    Add Cache Path setting
+    Add lots of commands into console
+
+Version 1.0.1.5
+
+    Added LiveServer support so basic websites can be served
+    Added Auto-Refresh support to LiveServers
+    Fixed html include statement not finding partial files starting with _
+
+Version 1.0.1.4
+
+    Added outputPath configuration setting to set default output path of all files, not just sass files
+    Removed sassPath (replaced with outputPath)
+    Added support for placing configuration files in any folder between the file and the root monitor path for tiered configurations
+    Removed the need to specify include extensions if engine only monitors for one file type (i.e. including .dhtml files no longer needs the .dhtml in the include name)
+    Removed the need to specify output extensions. If no extension is provided, the output extension because the engines default type (for example .html for the Html Engine)
+
+Version 1.0.1.3
+
+    Changed Html engine extension to .dhtml
+    Auto-set files starting with _ to partial files to match Sass behaviour
+
+Version 1.0.1.2
+
+    Fixed bug in regex detecting Sass import paths
+
+Version 1.0.1.1
+
+    Support for Sass Live processing
+    Lots of speed improvements
+    More dna.config configuration options including:
+        sassPath - specify a path for Sass output files
+        logLevel - The level of detail to output in the log
+    Detecting already processed and already generated files and skipping them
+</pre>
+
+                    </header>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+

@@ -19,4 +19,4 @@ RUN dotnet publish "DnaWeb.Server.csproj" -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "DnaWeb.Server.dll.dll"]
+ENTRYPOINT ["dotnet", "DnaWeb.Server.dll"]

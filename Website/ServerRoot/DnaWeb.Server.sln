@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2036
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29728.190
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DnaWeb.Server", "DnaWeb.Server.csproj", "{6312968A-49C5-4C9C-A6AC-BD54947054A3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DnaWeb.Server", "DnaWeb.Server.csproj", "{924AE107-8552-4B3D-8CF1-96644261B2B7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,15 +11,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{6312968A-49C5-4C9C-A6AC-BD54947054A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6312968A-49C5-4C9C-A6AC-BD54947054A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6312968A-49C5-4C9C-A6AC-BD54947054A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6312968A-49C5-4C9C-A6AC-BD54947054A3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{924AE107-8552-4B3D-8CF1-96644261B2B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{924AE107-8552-4B3D-8CF1-96644261B2B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{924AE107-8552-4B3D-8CF1-96644261B2B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{924AE107-8552-4B3D-8CF1-96644261B2B7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {C6D28D79-0479-4323-8BCD-A2C74290F713}
+		SolutionGuid = {2467D9E8-BEA4-4565-81BD-DD235EEB32C1}
 	EndGlobalSection
 EndGlobal

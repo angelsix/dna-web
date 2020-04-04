@@ -7,7 +7,7 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/core/sdk:3.1-buster AS build
 WORKDIR /src
-COPY ["DnaWeb.ServerAngelSix.csproj", ""]
+COPY ["DnaWeb.Server.csproj", ""]
 RUN dotnet restore "./DnaWeb.Server.csproj"
 COPY . .
 WORKDIR "/src/."
